@@ -31,7 +31,7 @@ function Get-ManagedBlock($data) {
     $lines=[System.Collections.Generic.List[string]]::new()
     [void]$lines.Add($beginMarker)
     [void]$lines.Add('$ManagedSettings = [ordered]@{')
-    [void]$lines.Add('    Version             = "2.0.2-dev"')
+    [void]$lines.Add('    Version             = "2.0.3-dev"')
     [void]$lines.Add(('    Language            = "{0}"' -f $data.language))
     [void]$lines.Add(('    UtcOffset           = {0}' -f [int]$data.utcOffset))
     [void]$lines.Add(('    UtcLabel            = "{0}"' -f ([string]$data.utcLabel).Replace('"','`"')))
