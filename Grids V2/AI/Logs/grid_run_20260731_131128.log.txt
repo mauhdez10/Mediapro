@@ -1,0 +1,183 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260731131128
+Username: IMAGINA\usa0313mh
+RunAs User: IMAGINA\usa0313mh
+Configuration Name: 
+Machine: US-2UA80718M2 (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\Users\usa0313mh\OneDrive - Imagina Media Audiovisual S.L\Documentos\Grids\Grids V2\FormatGrids.ps1
+Process ID: 31228
+PSVersion: 5.1.26100.8875
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8875
+BuildVersion: 10.0.26100.8875
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Printer already set to color today - skipping.
+
+============================================
+  GRID FORMATTER V2  |  UTC offset -4  |  Start: 10:00 UTC
+============================================
+
+Excel files found (10):
+  GRILLA CATV MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx
+  GRILLA CATV MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx
+  GRILLA MASTER PASIONES LATAM 2026.xlsx
+  GRILLA MASTER PASIONES US 2026.xlsx
+  GRILLA TVD MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx
+  GRILLA TVD MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx
+  SNETL - Week 31.xlsx
+  TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx
+  WEEK 31 V.4 1.xlsx
+  Week 32.xlsx
+
+>> GRILLA CATV MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx
+  [Grilla CATV ] Title: GRILLA CENTROAMÉRICA TV SEMANA DEL 03 AL 09 DE AGOSTO  2026
+  [Grilla CATV ] Done OK
+
+>> GRILLA CATV MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx
+  [Grilla CATV ] Title: GRILLA CENTROAMÉRICA TV SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO  2026
+  [Grilla CATV ] Done OK
+
+>> GRILLA MASTER PASIONES LATAM 2026.xlsx
+  [13-19 Julio ] Header row: 2
+  [13-19 Julio ] Header columns: A to I
+  [13-19 Julio ] Title: GRILLA PASIONES LATAM  2026
+  [13-19 Julio ] Done OK
+  [20-26 Julio] Header row: 2
+  [20-26 Julio] Header columns: A to I
+  [20-26 Julio] Title: GRILLA PASIONES LATAM  2026
+  [20-26 Julio] Done OK
+  [27 Julio-2 Agosto ] Header row: 2
+  [27 Julio-2 Agosto ] Header columns: A to I
+  [27 Julio-2 Agosto ] Title: GRILLA PASIONES LATAM  2026
+  [27 Julio-2 Agosto ] Done OK
+  [3-9 Agosto ] Header row: 2
+  [3-9 Agosto ] Header columns: A to I
+  [3-9 Agosto ] Title: GRILLA PASIONES LATAM  2026
+  [3-9 Agosto ] Done OK
+  [10-16 Agosto ] Header row: 2
+  [10-16 Agosto ] Header columns: A to I
+  [10-16 Agosto ] Title: GRILLA PASIONES LATAM  2026
+  [10-16 Agosto ] Done OK
+
+>> GRILLA MASTER PASIONES US 2026.xlsx
+  [13-19 Julio ] Header row: 2
+  [13-19 Julio ] Header columns: A to J
+  [13-19 Julio ] Title: GRILLA PASIONES US 2026
+  [13-19 Julio ] Removed left time zone: PT
+  [13-19 Julio ] Done OK
+  [20-26 Julio] Header row: 2
+  [20-26 Julio] Header columns: A to J
+  [20-26 Julio] Title: GRILLA PASIONES US 2026
+  [20-26 Julio] Removed left time zone: PT
+  [20-26 Julio] Done OK
+  [27 Julio-2 Agosto ] Header row: 2
+  [27 Julio-2 Agosto ] Header columns: A to J
+  [27 Julio-2 Agosto ] Title: GRILLA PASIONES US 2026
+  [27 Julio-2 Agosto ] Removed left time zone: PT
+  [27 Julio-2 Agosto ] Done OK
+  [3-9 Agosto] Header row: 2
+  [3-9 Agosto] Header columns: A to J
+  [3-9 Agosto] Title: GRILLA PASIONES US 2026
+  [3-9 Agosto] Removed left time zone: PT
+  [3-9 Agosto] Done OK
+  [10-16 Agosto] Header row: 2
+  [10-16 Agosto] Header columns: A to J
+  [10-16 Agosto] Title: GRILLA PASIONES US 2026
+  [10-16 Agosto] Removed left time zone: PT
+  [10-16 Agosto] Done OK
+
+>> GRILLA TVD MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx
+  [Sheet1] Title: GRILLA TELEVISIÓN DOMINICANA SEMANA DEL 03 AL 09 DE AGOSTO  2026
+  [Sheet1] Done OK
+
+>> GRILLA TVD MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx
+  [Sheet1] Title: GRILLA TELEVISIÓN DOMINICANA SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO  2026
+  [Sheet1] Done OK
+
+>> SNETL - Week 31.xlsx
+PS>TerminatingError(): "Specified cast is not valid."
+  [Sheet1] ERROR: Specified cast is not valid.
+
+>> TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx
+  [TN Aug 3-9] Header row: 2
+  [TN Aug 3-9] Header columns: A to K
+  [TN Aug 3-9] Title: TODO NOVELAS, MAS PASIONES
+  [TN Aug 3-9] Removed left time zone: P.T
+  [TN Aug 3-9] Removed right time zone: P.T
+  [TN Aug 3-9] Done OK
+  [TN Jul 6-12 ] Header row: 2
+  [TN Jul 6-12 ] Header columns: A to K
+  [TN Jul 6-12 ] Title: TODO NOVELAS, MAS PASIONES
+  [TN Jul 6-12 ] Removed left time zone: P.T
+  [TN Jul 6-12 ] Removed right time zone: P.T
+  [TN Jul 6-12 ] Done OK
+  [TN Aug 10-16] Header row: 2
+  [TN Aug 10-16] Header columns: A to K
+  [TN Aug 10-16] Title: TODO NOVELAS, MAS PASIONES
+  [TN Aug 10-16] Removed left time zone: P.T
+  [TN Aug 10-16] Removed right time zone: P.T
+  [TN Aug 10-16] Done OK
+  [TN Aug 17-23] Header row: 2
+  [TN Aug 17-23] Header columns: A to K
+  [TN Aug 17-23] Title: TODO NOVELAS, MAS PASIONES
+  [TN Aug 17-23] Removed left time zone: P.T
+  [TN Aug 17-23] Removed right time zone: P.T
+  [TN Aug 17-23] Done OK
+  [TN Aug 24-30] Header row: 2
+  [TN Aug 24-30] Header columns: A to K
+  [TN Aug 24-30] Title: TODO NOVELAS, MAS PASIONES
+  [TN Aug 24-30] Removed left time zone: P.T
+  [TN Aug 24-30] Removed right time zone: P.T
+  [TN Aug 24-30] Done OK
+
+>> WEEK 31 V.4 1.xlsx
+PS>TerminatingError(): "SportyNet filename matched, but no worksheet has the strict SportyNet layout."
+  Cannot process: SportyNet filename matched, but no worksheet has the strict SportyNet layout.
+
+>> Week 32.xlsx
+PS>TerminatingError(): "Specified cast is not valid."
+  [Sheet1] ERROR: Specified cast is not valid.
+
+
+============================================
+  FINAL REPORT
+============================================
+UPDATED (19):
+  + GRILLA CATV MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx > Grilla CATV
+  + GRILLA CATV MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx > Grilla CATV
+  + GRILLA MASTER PASIONES LATAM 2026.xlsx > 13-19 Julio
+  + GRILLA MASTER PASIONES LATAM 2026.xlsx > 20-26 Julio
+  + GRILLA MASTER PASIONES LATAM 2026.xlsx > 27 Julio-2 Agosto
+  + GRILLA MASTER PASIONES LATAM 2026.xlsx > 3-9 Agosto
+  + GRILLA MASTER PASIONES LATAM 2026.xlsx > 10-16 Agosto
+  + GRILLA MASTER PASIONES US 2026.xlsx > 13-19 Julio
+  + GRILLA MASTER PASIONES US 2026.xlsx > 20-26 Julio
+  + GRILLA MASTER PASIONES US 2026.xlsx > 27 Julio-2 Agosto
+  + GRILLA MASTER PASIONES US 2026.xlsx > 3-9 Agosto
+  + GRILLA MASTER PASIONES US 2026.xlsx > 10-16 Agosto
+  + GRILLA TVD MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx > Sheet1
+  + GRILLA TVD MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx > Sheet1
+  + TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx > TN Aug 3-9
+  + TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx > TN Jul 6-12
+  + TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx > TN Aug 10-16
+  + TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx > TN Aug 17-23
+  + TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx > TN Aug 24-30
+
+SKIPPED (0):
+
+ERRORS (3):
+  ! SNETL - Week 31.xlsx > Sheet1 : Specified cast is not valid.
+  ! WEEK 31 V.4 1.xlsx: SportyNet filename matched, but no worksheet has the strict SportyNet layout.
+  ! Week 32.xlsx > Sheet1 : Specified cast is not valid.
+
+============================================
+
+**********************
+Windows PowerShell transcript end
+End time: 20260731131316
+**********************

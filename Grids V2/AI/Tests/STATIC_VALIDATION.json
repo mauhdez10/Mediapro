@@ -1,0 +1,164 @@
+{
+  "version": "2.0.2-dev",
+  "passed": 31,
+  "failed": 0,
+  "script_sha256": "1c081e1ffc7147cbbb607b931b7fdacef2a4241dd92b1797b29d83f181a9c1b3",
+  "checks": [
+    {
+      "name": "Managed version is 2.0.2-dev",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Scalar unwrapping helper exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Safe string helper exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Sporty time extraction does not use Range.Text",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Sporty program extraction avoids direct Value2 string cast",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Merged program cells use top-left scalar",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Worksheet names use safe conversion",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Source variant uses safe conversion",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Time-stage diagnostic exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Program-stage diagnostic exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Strict-layout header probe exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Runtime and AI source match",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Settings UI copies match",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Runtime has no Excel Calculation assignment",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "No PDF export",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "No page-break automation",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Fixture exists: SNETL - Week 31.xlsx",
+      "passed": true,
+      "detail": "/mnt/data/gv2_fix_py/Grids V2/AI/References/SportyNet/SNETL - Week 31.xlsx"
+    },
+    {
+      "name": "Header layout supported: SNETL - Week 31.xlsx",
+      "passed": true,
+      "detail": "['GMT', 'BRT', 'BRT', 'GMT']"
+    },
+    {
+      "name": "Seven dates present: SNETL - Week 31.xlsx",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Legend present: SNETL - Week 31.xlsx",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Fixture exists: WEEK 31 V.4 1.xlsx",
+      "passed": true,
+      "detail": "/mnt/data/gv2_fix_py/Grids V2/AI/References/SportyNet/WEEK 31 V.4 1.xlsx"
+    },
+    {
+      "name": "Header layout supported: WEEK 31 V.4 1.xlsx",
+      "passed": true,
+      "detail": "['GMT', 'Mex', 'BRT', 'GMT']"
+    },
+    {
+      "name": "Seven dates present: WEEK 31 V.4 1.xlsx",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Legend present: WEEK 31 V.4 1.xlsx",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Fixture exists: Week 32.xlsx",
+      "passed": true,
+      "detail": "/mnt/data/gv2_fix_py/Grids V2/AI/References/SportyNet/Week 32.xlsx"
+    },
+    {
+      "name": "Header layout supported: Week 32.xlsx",
+      "passed": true,
+      "detail": "['GMT', 'BRT', 'BRT', 'GMT']"
+    },
+    {
+      "name": "Seven dates present: Week 32.xlsx",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Legend present: Week 32.xlsx",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "PowerShell delimiter balance ()",
+      "passed": true,
+      "detail": "872 vs 872"
+    },
+    {
+      "name": "PowerShell delimiter balance {}",
+      "passed": true,
+      "detail": "506 vs 506"
+    },
+    {
+      "name": "PowerShell delimiter balance []",
+      "passed": true,
+      "detail": "293 vs 293"
+    }
+  ],
+  "runtime_limit": "Desktop Excel COM unavailable; Windows rerun required."
+}

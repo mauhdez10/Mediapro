@@ -1,0 +1,14 @@
+{
+  "Grids_V2_Full.zip": {
+    "size": 90825,
+    "sha256": "b9917df0e5a9c505e56cd620d7bbf398a58da5d2a4f583d32f263f731782af3d"
+  },
+  "Grids_V2_Manager.zip": {
+    "size": 20602,
+    "sha256": "13c8df37f0a9d55933bff12b6e38882ff275dddc19efd862149cc10dab4da98c"
+  },
+  "Grids_V2_Operator.zip": {
+    "size": 15187,
+    "sha256": "95184b894fc0ec970aa2c610b50f2b6b8e9239f00729bfad3ca4065a8476ab63"
+  }
+}

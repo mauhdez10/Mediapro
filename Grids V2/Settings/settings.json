@@ -1,0 +1,37 @@
+{
+  "language": "English",
+  "utcOffset": -4,
+  "utcLabel": "UTC",
+  "printerColorEnabled": true,
+  "printerName": "MediaproUS_Canon_Online",
+  "tabs": {
+    "CATV": {
+      "tabs": "1",
+      "position": "First"
+    },
+    "TVD": {
+      "tabs": "1",
+      "position": "First"
+    },
+    "PASIONES_LATAM": {
+      "tabs": "5",
+      "position": "Last"
+    },
+    "PASIONES_US": {
+      "tabs": "5",
+      "position": "Last"
+    },
+    "TODO_NOVELAS": {
+      "tabs": "5",
+      "position": "Last"
+    },
+    "REV_TV": {
+      "tabs": "X",
+      "position": "First"
+    },
+    "SPORTYNET": {
+      "tabs": "X",
+      "position": "First"
+    }
+  }
+}
