@@ -7,7 +7,7 @@
 
 # >>> BEGIN MANAGED SETTINGS >>>
 $ManagedSettings = [ordered]@{
-    Version             = "2.0.2-dev"
+    Version             = "2.0.3-dev"
     Language            = "English"
     UtcOffset           = -4
     UtcLabel            = "UTC"
@@ -253,11 +253,35 @@ function Test-SportyDateHeader($value) {
 function Get-SportyScalarValue($value) {
     if ($null -eq $value) { return $null }
     if ($value -is [System.Array]) {
-        foreach ($entry in $value) {
-            $scalar = Get-SportyScalarValue $entry
-            if ($null -ne $scalar) { return $scalar }
+        $rank = $value.Rank
+        if ($rank -eq 1) {
+            # 1D array - get first non-null element
+            foreach ($entry in $value) {
+                $scalar = Get-SportyScalarValue $entry
+                if ($null -ne $scalar) { return $scalar }
+            }
+            return $null
+        } elseif ($rank -eq 2) {
+            # 2D array - get first non-null element
+            $length0 = $value.GetLength(0)
+            $length1 = $value.GetLength(1)
+            for ($i = 0; $i -lt $length0; $i++) {
+                for ($j = 0; $j -lt $length1; $j++) {
+                    $entry = $value[$i, $j]
+                    $scalar = Get-SportyScalarValue $entry
+                    if ($null -ne $scalar) { return $scalar }
+                }
+            }
+            return $null
+        } else {
+            # Higher-dimensional arrays - flatten and get first non-null
+            $flat = $value
+            foreach ($entry in $flat) {
+                $scalar = Get-SportyScalarValue $entry
+                if ($null -ne $scalar) { return $scalar }
+            }
+            return $null
         }
-        return $null
     }
     return $value
 }
@@ -337,6 +361,25 @@ function Get-SportyNetWorksheetLayout($ws) {
         $leftLocal = Get-SportyCellValueText ($ws.Cells.Item(2,2))
         if ((Get-SportyHeaderToken $gmt) -ne "GMT") { return $null }
 
+        # Check if this is already formatted (A2=GMT, B2=BRT, C2=CDMX structure)
+        $third = Get-SportyCellValueText ($ws.Cells.Item(2,3))
+        if (Test-SportyBrtHeader $leftLocal -and Test-SportyCdmxHeader $third) {
+            # Verify D2:J2 are date headers for already formatted structure
+            for ($c = 4; $c -le 10; $c++) {
+                if (-not (Test-SportyDateHeader $ws.Cells.Item(2,$c).Value2)) { return $null }
+            }
+            return [pscustomobject]@{
+                Worksheet = $ws; SheetName = if ($null -eq $ws.Name) { "?" } else { ConvertTo-SportySafeString $ws.Name }; IsFormatted = $true
+                HeaderRow = 2; ScheduleStartRow = 3; ScheduleEndRow = 98
+                GmtColumn = 1; LocalColumn = 2; DayStartColumn = 4; DayEndColumn = 10
+                DuplicateLocalColumn = $null; DuplicateGmtColumn = $null
+                GmtSourceColumn = 1; BrtSourceColumn = 2; CdmxSourceColumn = 3
+                SourceVariant = "FORMATTED"
+                LegendRow = $null; LegendStartColumn = $null; Title = ""
+            }
+        }
+
+        # Check for unformatted BRT-left structure
         $leftIsBrt = Test-SportyBrtHeader $leftLocal
         $leftIsCdmx = Test-SportyCdmxHeader $leftLocal
         if (-not $leftIsBrt -and -not $leftIsCdmx) { return $null }
@@ -347,7 +390,7 @@ function Get-SportyNetWorksheetLayout($ws) {
                 if (-not (Test-SportyDateHeader $ws.Cells.Item(2,$c).Value2)) { return $null }
             }
             return [pscustomobject]@{
-                Worksheet = $ws; SheetName = (ConvertTo-SportySafeString $ws.Name); IsFormatted = $true
+                Worksheet = $ws; SheetName = if ($null -eq $ws.Name) { "?" } else { ConvertTo-SportySafeString $ws.Name }; IsFormatted = $true
                 HeaderRow = 2; ScheduleStartRow = 3; ScheduleEndRow = 98
                 GmtColumn = 1; LocalColumn = 2; DayStartColumn = 4; DayEndColumn = 10
                 DuplicateLocalColumn = $null; DuplicateGmtColumn = $null
@@ -409,7 +452,7 @@ function Get-SportyNetWorksheetLayout($ws) {
         $sourceVariant = if ($leftIsCdmx) { "CDMX_LEFT_BRT_RIGHT" } else { "BRT_LEFT" }
 
         return [pscustomobject]@{
-            Worksheet = $ws; SheetName = (ConvertTo-SportySafeString $ws.Name); IsFormatted = $false
+            Worksheet = $ws; SheetName = if ($null -eq $ws.Name) { "?" } else { ConvertTo-SportySafeString $ws.Name }; IsFormatted = $false
             HeaderRow = 2; ScheduleStartRow = 3; ScheduleEndRow = 98
             GmtColumn = 1; LocalColumn = 2; DayStartColumn = 3; DayEndColumn = 9
             DuplicateLocalColumn = 10; DuplicateGmtColumn = 11
@@ -632,8 +675,9 @@ function Set-ThinBorders($range, [switch]$Inside) {
 }
 
 function Format-SportyNetWorksheet($ws, $layout, $xl) {
+    $sheetName = if ($null -eq $ws.Name) { "?" } else { ConvertTo-SportySafeString $ws.Name }
     if ($layout.IsFormatted) {
-        Show-Text "  [$($ws.Name)] Already formatted - skipping" "  [$($ws.Name)] Ya esta formateada - se omite" DarkGray
+        Show-Text "  [$sheetName] Already formatted - skipping" "  [$sheetName] Ya esta formateada - se omite" DarkGray
         return [pscustomobject]@{ Changed=$false; Anomalies=@() }
     }
     try { $timeData = Get-SportyNetTimeData $ws $layout }
@@ -663,9 +707,19 @@ function Format-SportyNetWorksheet($ws, $layout, $xl) {
     $ws.Range("A2:C2").HorizontalAlignment=$XL_CENTER; $ws.Range("A2:C2").VerticalAlignment=$XL_CENTER
     Set-ThinBorders ($ws.Range("A2:C2")) -Inside
 
-    $matrix = [object[,]]::new(96,3)
-    for ($i=0; $i -lt 96; $i++) { $matrix[$i,0]=$timeData.GMT[$i]; $matrix[$i,1]=$timeData.BRT[$i]; $matrix[$i,2]=$timeData.CDMX[$i] }
-    $ws.Range("A3:C98").Value2=$matrix
+    # Write time values individually to avoid COM casting issues with arrays
+    # Try different COM properties to handle numeric time values correctly
+    for ($r = 3; $r -le 98; $r++) {
+        $rowIndex = $r - 3
+        $gmtValue = $timeData.GMT[$rowIndex]
+        $brtValue = $timeData.BRT[$rowIndex]
+        $cdmxValue = $timeData.CDMX[$rowIndex]
+        
+        # Use Value property instead of Value2 for better type handling
+        $ws.Cells.Item($r, 1).Value = $gmtValue
+        $ws.Cells.Item($r, 2).Value = $brtValue
+        $ws.Cells.Item($r, 3).Value = $cdmxValue
+    }
     $ws.Range("A3:C98").NumberFormat="h:mm"; $ws.Range("A3:C98").Font.Name="Arial"; $ws.Range("A3:C98").Font.Size=14
     $ws.Range("A3:C98").Font.Color=$ColorBlack; $ws.Range("A3:A98").Font.Bold=$true; $ws.Range("B3:C98").Font.Bold=$false
     $ws.Range("A3:B98").Interior.Color=$ColorYellow; $ws.Range("C3:C98").Interior.Color=$ColorCdmx
@@ -708,10 +762,10 @@ function Format-SportyNetWorksheet($ws, $layout, $xl) {
     # Operators keep control of the workbook's native print layout.
 
     foreach ($anomaly in $timeData.Anomalies) {
-        Show-Text "  [$($ws.Name)] Normalized $($anomaly.Address): $($anomaly.RawValue) -> $([DateTime]::FromOADate($anomaly.NormalizedValue).ToString('HH:mm'))" `
-                  "  [$($ws.Name)] Normalizado $($anomaly.Address): $($anomaly.RawValue) -> $([DateTime]::FromOADate($anomaly.NormalizedValue).ToString('HH:mm'))" DarkYellow
+        Show-Text "  [$sheetName] Normalized $($anomaly.Address): $($anomaly.RawValue) -> $([DateTime]::FromOADate($anomaly.NormalizedValue).ToString('HH:mm'))" `
+                  "  [$sheetName] Normalizado $($anomaly.Address): $($anomaly.RawValue) -> $([DateTime]::FromOADate($anomaly.NormalizedValue).ToString('HH:mm'))" DarkYellow
     }
-    Show-Text "  [$($ws.Name)] SportyNet formatting completed" "  [$($ws.Name)] Formato SportyNet completado" Green
+    Show-Text "  [$sheetName] SportyNet formatting completed" "  [$sheetName] Formato SportyNet completado" Green
     return [pscustomobject]@{ Changed=$true; Anomalies=$timeData.Anomalies }
 }
 
@@ -857,15 +911,32 @@ foreach ($f in $files) {
             }
             $selectedLayouts=Select-ItemsByRule $layouts "SPORTYNET"
             foreach ($layout in $selectedLayouts) {
-                $lbl="$($f.Name) > $($layout.SheetName)"
+                $sheetName = if ($null -eq $layout.Worksheet.Name) { "?" } else { ConvertTo-SportySafeString $layout.Worksheet.Name }
+                $lbl = "$($f.Name) > $sheetName"
                 try {
                     $result=Format-SportyNetWorksheet $layout.Worksheet $layout $xl
                     if ($result.Changed) { $workbookChanged=$true; $rptUpdated += $lbl }
                     else { $rptSkipped += "$lbl ($(Get-Text 'already formatted' 'ya formateada'))" }
                 } catch {
-                    Show-Text "  [$($layout.SheetName)] ERROR: $($_.Exception.Message)" `
-                              "  [$($layout.SheetName)] ERROR: $($_.Exception.Message)" Red
-                    $rptErrors += "$lbl : $($_.Exception.Message)"
+                    $errorDetails = $_.Exception.Message
+                    $errorType = $_.Exception.GetType().FullName
+                    $errorPos = $_.InvocationInfo.PositionMessage
+                    $errorScript = $_.InvocationInfo.ScriptName
+                    $errorLine = $_.InvocationInfo.ScriptLineNumber
+                    
+                    Show-Text "  [$sheetName] ERROR: $errorDetails" `
+                              "  [$sheetName] ERROR: $errorDetails" Red
+                    Show-Text "  [$sheetName] TYPE: $errorType LINE: $errorLine" `
+                              "  [$sheetName] TIPO: $errorType LINEA: $errorLine" DarkGray
+                    Show-Text "  [$sheetName] POS: $errorPos" `
+                              "  [$sheetName] POS: $errorPos" DarkGray
+                    
+                    if ($_.Exception.InnerException) {
+                        Show-Text "  [$sheetName] INNER: $($_.Exception.InnerException.Message)" `
+                                  "  [$sheetName] INTERNO: $($_.Exception.InnerException.Message)" DarkGray
+                    }
+                    
+                    $rptErrors += "$lbl : $errorDetails"
                 }
             }
         } else {

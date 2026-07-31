@@ -1,0 +1,134 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260731142933
+Username: MAURO_LAPTOP\mauhd
+RunAs User: MAURO_LAPTOP\mauhd
+Configuration Name: 
+Machine: MAURO_LAPTOP (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File FormatGrids.ps1
+Process ID: 12988
+PSVersion: 5.1.26100.8972
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8972
+BuildVersion: 10.0.26100.8972
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Printer already set to color today - skipping.
+
+============================================
+  GRID FORMATTER V2  |  UTC offset -4  |  Start: 10:00 UTC
+============================================
+
+Excel files found (10):
+  GRILLA CATV MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx
+  GRILLA CATV MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx
+  GRILLA MASTER PASIONES LATAM 2026.xlsx
+  GRILLA MASTER PASIONES US 2026.xlsx
+  GRILLA TVD MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx
+  GRILLA TVD MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx
+  SNETL - Week 31.xlsx
+  TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx
+  WEEK 31 V.4 1.xlsx
+  Week 32.xlsx
+
+>> GRILLA CATV MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx
+  [Grilla CATV ] Already done - skipping
+
+>> GRILLA CATV MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx
+  [Grilla CATV ] Already done - skipping
+
+>> GRILLA MASTER PASIONES LATAM 2026.xlsx
+  [13-19 Julio ] Header row: 2
+  [13-19 Julio ] Already done - skipping
+  [20-26 Julio] Header row: 2
+  [20-26 Julio] Already done - skipping
+  [27 Julio-2 Agosto ] Header row: 2
+  [27 Julio-2 Agosto ] Already done - skipping
+  [3-9 Agosto ] Header row: 2
+  [3-9 Agosto ] Already done - skipping
+  [10-16 Agosto ] Header row: 2
+  [10-16 Agosto ] Already done - skipping
+
+>> GRILLA MASTER PASIONES US 2026.xlsx
+  [13-19 Julio ] Header row: 2
+  [13-19 Julio ] Already done - skipping
+  [20-26 Julio] Header row: 2
+  [20-26 Julio] Already done - skipping
+  [27 Julio-2 Agosto ] Header row: 2
+  [27 Julio-2 Agosto ] Already done - skipping
+  [3-9 Agosto] Header row: 2
+  [3-9 Agosto] Already done - skipping
+  [10-16 Agosto] Header row: 2
+  [10-16 Agosto] Already done - skipping
+
+>> GRILLA TVD MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx
+  [Sheet1] Already done - skipping
+
+>> GRILLA TVD MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx
+  [Sheet1] Already done - skipping
+
+>> SNETL - Week 31.xlsx
+PS>TerminatingError(): "Unable to cast object of type 'System.Object[,]' to type 'System.String'."
+  [Sheet1] ERROR: Unable to cast object of type 'System.Object[,]' to type 'System.String'.
+
+>> TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx
+  [TN Aug 3-9] Header row: 2
+  [TN Aug 3-9] Already done - skipping
+  [TN Jul 6-12 ] Header row: 2
+  [TN Jul 6-12 ] Already done - skipping
+  [TN Aug 10-16] Header row: 2
+  [TN Aug 10-16] Already done - skipping
+  [TN Aug 17-23] Header row: 2
+  [TN Aug 17-23] Already done - skipping
+  [TN Aug 24-30] Header row: 2
+  [TN Aug 24-30] Already done - skipping
+
+>> WEEK 31 V.4 1.xlsx
+PS>TerminatingError(): "Unable to cast object of type 'System.Object[,]' to type 'System.String'."
+  [Sheet1] ERROR: Unable to cast object of type 'System.Object[,]' to type 'System.String'.
+
+>> Week 32.xlsx
+PS>TerminatingError(): "Unable to cast object of type 'System.Object[,]' to type 'System.String'."
+  [Sheet1] ERROR: Unable to cast object of type 'System.Object[,]' to type 'System.String'.
+
+
+============================================
+  FINAL REPORT
+============================================
+UPDATED (0):
+
+SKIPPED (19):
+  - GRILLA CATV MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx > Grilla CATV  (already done)
+  - GRILLA CATV MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx > Grilla CATV  (already done)
+  - GRILLA MASTER PASIONES LATAM 2026.xlsx > 13-19 Julio  (already done)
+  - GRILLA MASTER PASIONES LATAM 2026.xlsx > 20-26 Julio (already done)
+  - GRILLA MASTER PASIONES LATAM 2026.xlsx > 27 Julio-2 Agosto  (already done)
+  - GRILLA MASTER PASIONES LATAM 2026.xlsx > 3-9 Agosto  (already done)
+  - GRILLA MASTER PASIONES LATAM 2026.xlsx > 10-16 Agosto  (already done)
+  - GRILLA MASTER PASIONES US 2026.xlsx > 13-19 Julio  (already done)
+  - GRILLA MASTER PASIONES US 2026.xlsx > 20-26 Julio (already done)
+  - GRILLA MASTER PASIONES US 2026.xlsx > 27 Julio-2 Agosto  (already done)
+  - GRILLA MASTER PASIONES US 2026.xlsx > 3-9 Agosto (already done)
+  - GRILLA MASTER PASIONES US 2026.xlsx > 10-16 Agosto (already done)
+  - GRILLA TVD MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx > Sheet1 (already done)
+  - GRILLA TVD MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx > Sheet1 (already done)
+  - TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx > TN Aug 3-9 (already done)
+  - TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx > TN Jul 6-12  (already done)
+  - TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx > TN Aug 10-16 (already done)
+  - TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx > TN Aug 17-23 (already done)
+  - TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx > TN Aug 24-30 (already done)
+
+ERRORS (3):
+  ! SNETL - Week 31.xlsx > Sheet1 : Unable to cast object of type 'System.Object[,]' to type 'System.String'.
+  ! WEEK 31 V.4 1.xlsx > Sheet1 : Unable to cast object of type 'System.Object[,]' to type 'System.String'.
+  ! Week 32.xlsx > Sheet1 : Unable to cast object of type 'System.Object[,]' to type 'System.String'.
+
+============================================
+
+**********************
+Windows PowerShell transcript end
+End time: 20260731142949
+**********************

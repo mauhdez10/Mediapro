@@ -1,0 +1,33 @@
+GRID FORMATTER V2 DEBUG LOG
+================================
+
+PROJECT LOCATION: C:/Users/mauhd/GridsV2-Debug/Grids V2
+BACKUP CREATED: FormatGrids.ps1.backup
+VERSION: 2.0.2-dev
+SHA-256: (to be calculated)
+
+TASK: Reproduce System.Object[] to string cast error in SportyNet processing
+
+TEST FILES:
+- SNETL - Week 31.xlsx  
+- WEEK 31 V.4 1.xlsx
+- Week 32.xlsx
+
+CURRENT ERROR:
+All three SportyNet files fail with:
+"Unable to cast object of type 'System.Object[]' to type 'System.String'"
+
+Analysis of current scalar helpers:
+- Get-SportyScalarValue: Handles array unwrapping
+- Get-SportyCellRawValue: Calls Get-SportyScalarValue
+- ConvertTo-SportySafeString: Converts to string after scalar extraction
+
+HYPOTHESIS: The error occurs in a code path that doesn't use these helpers.
+
+NEXT STEPS:
+1. Run instrumented version to catch exact error location
+2. Identify all unsafe conversions
+3. Implement comprehensive scalar read contract
+4. Fix console closing issue
+5. Test all three files
+6. Regression test existing grids

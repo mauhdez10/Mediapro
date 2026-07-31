@@ -1,0 +1,160 @@
+GRID FORMATTER V2 - DETAILED DEBUGGING REPORT
+============================================================
+
+PROJECT LOCATION
+----------------
+Local: C:/Users/mauhd/GridsV2-Debug/Grids V2
+GitHub: mauhdez10/Mediapro (Grids V2 folder)
+
+CURRENT STATUS
+--------------
+Version: 2.0.3-dev (upgraded from 2.0.2-dev)
+Backup created: FormatGrids.ps1.backup
+
+ERROR INVESTIGATION
+-------------------
+
+**Original Error:**
+All three SportyNet files fail with:
+"Unable to cast object of type 'System.Object[,]' to type 'System.String'"
+
+Test Files:
+- SNETL - Week 31.xlsx
+- WEEK 31 V.4 1.xlsx  
+- Week 32.xlsx
+
+**Error Evolution:**
+
+1. Initial error: System.Object[,] casting
+2. After fixing array handling: Still System.Object[,] but different location
+3. After finding exact line: Line 697 (previously 693) in Format-SportyNetWorksheet
+4. After matrix type change: System.Double[,] casting at same line
+5. After individual cell writing: System.Double casting at line 694
+
+**EXACT ERROR LOCATION:**
+File: FormatGrids.ps1
+Line: 694 (dynamic due to code changes)
+Function: Format-SportyNetWorksheet
+Code: $ws.Cells.Item($r, 1).Value2 = $timeData.GMT[$rowIndex]
+
+ERROR DETAILS (Latest):
+Type: System.InvalidCastException
+Message: Unable to cast object of type 'System.Double' to type 'System.String'.
+Line: 694
+Position: At C:\Users\mauhd\GridsV2-Debug\Grids V2\FormatGrids.ps1:694 char:9
+
+ROOT CAUSE ANALYSIS
+------------------
+
+The error occurs in the SportyNet time data writing phase. The issue appears to be:
+
+1. **COM Type Mismatch**: PowerShell System.Double values cannot be directly written to Excel COM cells without proper type conversion
+2. **Array Handling**: The original code used $ws.Range("A3:C98").Value2 = $matrix which caused casting issues
+3. **Individual Cell Writing**: Changed to individual cell writes, but still experiencing type casting errors
+
+FIXES IMPLEMENTED
+-----------------
+
+✅ Enhanced scalar value handling:
+- Added 2D array support in Get-SportyScalarValue function
+- Handles 1D arrays, 2D arrays, and higher-dimensional arrays
+- Safely extracts first non-null element
+
+✅ Enhanced error reporting:
+- Added detailed error output showing exception type, line number, position
+- Included inner exception details when available
+- Enhanced SportyNet error handling with sheet name safety
+
+✅ Fixed worksheet name interpolation:
+- Protected all $ws.Name string interpolations with ConvertTo-SportySafeString
+- Added null checks before conversion
+
+✅ Updated version number:
+- Changed from 2.0.2-dev to 2.0.3-dev
+
+REMAINING ISSUES
+----------------
+
+🔴 CRITICAL: SportyNet time data writing still fails with System.Double casting error
+
+The core issue is in the time data extraction or cell writing mechanism. The problem may be:
+
+1. Time data collection returning incompatible types
+2. Excel COM cell assignment requiring explicit type conversion
+3. Potential issue with Get-SportyNetTimeData function
+4. COM interface requiring different approach for numeric time values
+
+NEXT STEPS NEEDED
+-----------------
+
+1. **Investigate time data collection**: 
+   - Test Get-SportyCellRawValue function with actual SportyNet cells
+   - Verify ConvertTo-SportyNetTime function output types
+   - Check if $timeData.GMT[$rowIndex] returns correct type
+
+2. **Try alternative cell writing approaches**:
+   - Use explicit type conversion before assignment
+   - Try different COM property (Value vs Value2 vs Formula)
+   - Consider using Range.Value2 with proper array structure
+
+3. **Test with minimal reproduction**:
+   - Create isolated test for single cell numeric write
+   - Test different Excel COM approaches
+   - Verify Excel COM interface expectations
+
+4. **Console and logging**:
+   - ✅ Console already stays open for debugging
+   - ✅ Enhanced error messages provide diagnostic details
+   - Need to add timestamped log file output
+
+5. **Regression testing**:
+   - Test existing grids (CATV, TVD, Pasiones, Todo Novelas)
+   - Verify routing remains unchanged
+   - Confirm existing grid processing still works
+
+CURRENT WORKAROUND
+------------------
+
+For now, SportyNet processing is broken. The existing grid types (CATV, TVD, Pasiones, Todo Novelas, REV TV) continue to work correctly as they skip already-formatted sheets.
+
+The fix requires deeper investigation into Excel COM numeric value handling and possibly a different approach to writing time values to cells.
+
+FILES MODIFIED
+--------------
+
+1. FormatGrids.ps1:
+   - Version: 2.0.2-dev → 2.0.3-dev
+   - Enhanced Get-SportyScalarValue with 2D array support
+   - Enhanced error reporting in SportyNet processing
+   - Protected worksheet name interpolations
+   - Changed matrix writing to individual cell writes (still problematic)
+
+2. FormatGrids.ps1.backup:
+   - Created as safety backup before modifications
+
+STATUS: IN PROGRESS
+-------------------
+
+The debugging is ongoing. The root cause has been narrowed down to Excel COM numeric value writing, but a complete solution requires further investigation into the most reliable way to write numeric time values to Excel cells via COM interface.
+
+SUCCESS METRICS NOT YET MET
+----------------------------
+
+❌ SportyNet files still fail processing
+❌ System.Double casting error persists
+❌ No successful formatting of test SportyNet files
+❌ Regression testing not completed
+❌ GitHub push not attempted
+❌ Full test suite not passed
+
+READY FOR USER DECISION
+------------------------
+
+The debugging has identified the exact error location and nature, but requires additional investigation into Excel COM numeric value handling. Options:
+
+1. Continue debugging with more detailed COM interface investigation
+2. Try alternative approaches to numeric value writing
+3. Consider reverting to array-based approach with different type handling
+4. Research Excel COM documentation for numeric value best practices
+
+GRID FORMATTER V2 STATUS: ⚠️ PARTIALLY REPAIRED - SPORTYNET STILL BROKEN
