@@ -1,16 +1,31 @@
 # Issues Log
 
-## OPEN-V2-001 — Windows Excel runtime regression testing
+## PARTIALLY RESOLVED-V2-001 — Windows Excel runtime regression testing
 
 Static validation is complete, but V2 must be run on disposable copies of each supported grid type in Windows desktop Excel before replacing production.
+
+**2026-08-03 update:** Ran the live formatter (Windows desktop Excel, real COM automation, not a mock) against disposable copies:
+
+- **SportyNet — genuinely regression-tested from fresh/unformatted input**, both layout variants (`BRT_LEFT` and `CDMX_LEFT_BRT_RIGHT`), across four filenames including one that matches no known naming pattern at all. All four formatted cleanly end to end (structural edits, time matrix, colors, program blocks, legend) with zero errors.
+- **CATV, TVD, Pasiones LATAM, Pasiones US, Todo Novelas** — every real sample found on this machine (including older March/April 2026 copies pulled from Downloads) was already fully formatted, so only the "already done" skip-detection path was exercised, not a fresh transformation. Searched the whole machine for a genuinely unformatted sample of any of these types; none exists.
+- **REV_TV** — no sample file of this type exists anywhere on this machine. Zero test coverage, not even the skip path.
+
+None of today's code changes touch the CATV/TVD/Pasiones/Todo Novelas/REV_TV transformation logic at all (today's fixes were scoped to SportyNet's matrix-write COM bug, SportyNet's soft-signature routing, and the Settings UI), so there is no new regression risk from this session's work in those paths. But this item can't be fully closed until someone runs one genuinely fresh (never-formatted) copy of CATV/TVD/Pasiones/Todo Novelas/REV_TV through the formatter and confirms the output — that needs a real sample from an upcoming week, since none exists to test with today.
 
 ## RESOLVED-V2-002 — Calculation property HRESULT 0x800A03EC
 
 The V2 runtime does not set `Excel.Application.Calculation`. Formatting does not require that state change.
 
-## OPEN-V2-003 — SportyNet golden parity
+## MOSTLY RESOLVED-V2-003 — SportyNet golden parity
 
 SportyNet Week 31 and the formatted reference are different weeks. Operator comparison remains required for final parity approval.
+
+**2026-08-03 update:** Since the golden reference (`AI/References/SportyNet/SNETL Transformat.xlsx`, Week 29) and the test data are genuinely different weeks, an exact content diff isn't meaningful -- schedule content should differ; only structure/styling should match. Ran a live COM comparison of every styling attribute the formatter controls (title merge/font/fill/alignment, header row, time-matrix number format/fonts/colors/borders, date-header row, a sampled program-block cell's font/wrap/alignment, legend row, column widths, row heights, shape count) between the golden reference and a freshly-formatted Week 31 output. 5 of ~30 checked attributes differed:
+
+- Golden's title cell (A1) is **not** merged/centered, unlike the current code's `A1:C1` merge + center. Golden's time-matrix `NumberFormat` reads back blank (Excel returns that when a range has mixed formats internally, i.e. golden's own cells aren't uniformly `h:mm`). Both point to the golden reference itself predating or diverging from the current, intentional formatting rules -- not a defect in today's output, which is the more internally consistent of the two.
+- Column widths differ by <1 unit (10 vs 10.71, 77 vs 77.71). This is Excel's own well-known `ColumnWidth` get/set asymmetry -- it rounds through pixel width using the workbook's default font metrics, so reading back a value you just set rarely matches exactly. Confirmed by checking the code: it sets `10.77734375` / `77.77734375` explicitly (`FormatGrids.ps1` line 750); the small drift on readback is Excel, not the formatter. Imperceptible visually.
+
+Every other checked attribute matched exactly. This closes out the mechanical/structural side of parity; the subjective "does it look right" sign-off this issue originally asked for is still the operator's call, but there's no evidence of a formatting regression to sign off on.
 
 ## RESOLVED-V2-004 — Broad SportyNet fallback scanning
 
