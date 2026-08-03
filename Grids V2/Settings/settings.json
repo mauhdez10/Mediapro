@@ -33,5 +33,56 @@
       "tabs": "X",
       "position": "First"
     }
+  },
+  "layout": {
+    "CATV": {
+      "fontSize": "14",
+      "defaultRowHeight": "25",
+      "headerRowHeight": "35",
+      "smallColumnWidth": "7",
+      "defaultColumnWidth": "37"
+    },
+    "TVD": {
+      "fontSize": "14",
+      "defaultRowHeight": "25",
+      "headerRowHeight": "35",
+      "smallColumnWidth": "7",
+      "defaultColumnWidth": "37"
+    },
+    "PASIONES_LATAM": {
+      "fontSize": "14",
+      "defaultRowHeight": "25",
+      "headerRowHeight": "35",
+      "smallColumnWidth": "7",
+      "defaultColumnWidth": "37"
+    },
+    "PASIONES_US": {
+      "fontSize": "14",
+      "defaultRowHeight": "25",
+      "headerRowHeight": "35",
+      "smallColumnWidth": "7",
+      "defaultColumnWidth": "37"
+    },
+    "TODO_NOVELAS": {
+      "fontSize": "14",
+      "defaultRowHeight": "25",
+      "headerRowHeight": "35",
+      "smallColumnWidth": "7",
+      "defaultColumnWidth": "37"
+    },
+    "REV_TV": {
+      "fontSize": "14",
+      "defaultRowHeight": "25",
+      "headerRowHeight": "35",
+      "smallColumnWidth": "7",
+      "defaultColumnWidth": "37"
+    },
+    "SPORTYNET": {
+      "fontSize": "14",
+      "defaultRowHeight": "25",
+      "headerRowHeight": "35",
+      "smallColumnWidth": "7",
+      "defaultColumnWidth": "37"
+    }
   }
 }

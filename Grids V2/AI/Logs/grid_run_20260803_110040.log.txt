@@ -1,0 +1,38 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260803110040
+Username: MAURO_LAPTOP\mauhd
+RunAs User: MAURO_LAPTOP\mauhd
+Configuration Name: 
+Machine: MAURO_LAPTOP (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -Command .\FormatGrids.ps1
+Process ID: 48368
+PSVersion: 5.1.26100.8972
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8972
+BuildVersion: 10.0.26100.8972
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Setting printer to color...
+Printer window not found - color setup skipped.
+
+============================================
+  GRID FORMATTER V2  |  UTC offset -4  |  Start: 10:00 UTC
+============================================
+
+Excel files found (11):
+  GRILLA CATV MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx
+  GRILLA CATV MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx
+  GRILLA MASTER PASIONES LATAM 2026.xlsx
+  GRILLA MASTER PASIONES US 2026.xlsx
+  GRILLA TVD MASTER SEMANA DEL 03 AL 09 DE AGOSTO 2026.xlsx
+  GRILLA TVD MASTER SEMANA DEL 27 DE JULIO AL 02 DE AGOSTO 2026.xlsx
+  SNETL - Week 31.xlsx
+  SNETL Week31.finaltest.xlsx
+  TODO NOVELAS  PROGRAMMING GRID 2026 7.13.xlsx
+  WEEK 31 V.4 1.xlsx
+  Week 32.xlsx
+

@@ -22,6 +22,15 @@ $ManagedSettings = [ordered]@{
         REV_TV           = [ordered]@{ Mode = "All";   Count = 0 }
         SPORTYNET        = [ordered]@{ Mode = "All";   Count = 0 }
     }
+    Layouts = [ordered]@{
+        CATV             = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
+        TVD              = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
+        PASIONES_LATAM   = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
+        PASIONES_US      = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
+        TODO_NOVELAS     = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
+        REV_TV           = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
+        SPORTYNET        = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
+    }
 }
 # <<< END MANAGED SETTINGS <<<
 
@@ -41,6 +50,15 @@ $DefaultColW = 37
 $PF_TimeColW = 8
 $PF_CenterW  = 30
 $DataRowEnd  = 50
+
+# Default layout values (used if not overridden in settings)
+$DefaultLayout = [ordered]@{
+    FontSize     = $FontSize
+    DefaultRowH  = $DefaultRowH
+    HeaderRowH   = $HeaderRowH
+    SmallColW    = $SmallColW
+    DefaultColW  = $DefaultColW
+}
 
 # SportyNet constants. These are intentionally independent of the
 # global UTC setting because the source grid already supplies GMT/BRT.
@@ -215,6 +233,22 @@ function Get-TabRule([string]$gridType) {
     return [ordered]@{ Mode = "All"; Count = 0 }
 }
 
+function Get-GridLayout([string]$gridType) {
+    try {
+        $gridLayout = $ManagedSettings.Layouts[$gridType]
+        if ($null -ne $gridLayout) {
+            return [ordered]@{
+                FontSize     = [int]$gridLayout.FontSize
+                DefaultRowH  = [double]$gridLayout.DefaultRowHeight
+                HeaderRowH   = [double]$gridLayout.HeaderRowHeight
+                SmallColW    = [double]$gridLayout.SmallColumnWidth
+                DefaultColW  = [double]$gridLayout.DefaultColumnWidth
+            }
+        }
+    } catch {}
+    return $DefaultLayout
+}
+
 function Select-ItemsByRule($items, [string]$gridType) {
     $array = @($items)
     if ($array.Count -eq 0) { return @() }
@@ -253,35 +287,11 @@ function Test-SportyDateHeader($value) {
 function Get-SportyScalarValue($value) {
     if ($null -eq $value) { return $null }
     if ($value -is [System.Array]) {
-        $rank = $value.Rank
-        if ($rank -eq 1) {
-            # 1D array - get first non-null element
-            foreach ($entry in $value) {
-                $scalar = Get-SportyScalarValue $entry
-                if ($null -ne $scalar) { return $scalar }
-            }
-            return $null
-        } elseif ($rank -eq 2) {
-            # 2D array - get first non-null element
-            $length0 = $value.GetLength(0)
-            $length1 = $value.GetLength(1)
-            for ($i = 0; $i -lt $length0; $i++) {
-                for ($j = 0; $j -lt $length1; $j++) {
-                    $entry = $value[$i, $j]
-                    $scalar = Get-SportyScalarValue $entry
-                    if ($null -ne $scalar) { return $scalar }
-                }
-            }
-            return $null
-        } else {
-            # Higher-dimensional arrays - flatten and get first non-null
-            $flat = $value
-            foreach ($entry in $flat) {
-                $scalar = Get-SportyScalarValue $entry
-                if ($null -ne $scalar) { return $scalar }
-            }
-            return $null
+        foreach ($entry in $value) {
+            $scalar = Get-SportyScalarValue $entry
+            if ($null -ne $scalar) { return $scalar }
         }
+        return $null
     }
     return $value
 }
@@ -361,25 +371,6 @@ function Get-SportyNetWorksheetLayout($ws) {
         $leftLocal = Get-SportyCellValueText ($ws.Cells.Item(2,2))
         if ((Get-SportyHeaderToken $gmt) -ne "GMT") { return $null }
 
-        # Check if this is already formatted (A2=GMT, B2=BRT, C2=CDMX structure)
-        $third = Get-SportyCellValueText ($ws.Cells.Item(2,3))
-        if (Test-SportyBrtHeader $leftLocal -and Test-SportyCdmxHeader $third) {
-            # Verify D2:J2 are date headers for already formatted structure
-            for ($c = 4; $c -le 10; $c++) {
-                if (-not (Test-SportyDateHeader $ws.Cells.Item(2,$c).Value2)) { return $null }
-            }
-            return [pscustomobject]@{
-                Worksheet = $ws; SheetName = if ($null -eq $ws.Name) { "?" } else { ConvertTo-SportySafeString $ws.Name }; IsFormatted = $true
-                HeaderRow = 2; ScheduleStartRow = 3; ScheduleEndRow = 98
-                GmtColumn = 1; LocalColumn = 2; DayStartColumn = 4; DayEndColumn = 10
-                DuplicateLocalColumn = $null; DuplicateGmtColumn = $null
-                GmtSourceColumn = 1; BrtSourceColumn = 2; CdmxSourceColumn = 3
-                SourceVariant = "FORMATTED"
-                LegendRow = $null; LegendStartColumn = $null; Title = ""
-            }
-        }
-
-        # Check for unformatted BRT-left structure
         $leftIsBrt = Test-SportyBrtHeader $leftLocal
         $leftIsCdmx = Test-SportyCdmxHeader $leftLocal
         if (-not $leftIsBrt -and -not $leftIsCdmx) { return $null }
@@ -390,7 +381,7 @@ function Get-SportyNetWorksheetLayout($ws) {
                 if (-not (Test-SportyDateHeader $ws.Cells.Item(2,$c).Value2)) { return $null }
             }
             return [pscustomobject]@{
-                Worksheet = $ws; SheetName = if ($null -eq $ws.Name) { "?" } else { ConvertTo-SportySafeString $ws.Name }; IsFormatted = $true
+                Worksheet = $ws; SheetName = (ConvertTo-SportySafeString $ws.Name); IsFormatted = $true
                 HeaderRow = 2; ScheduleStartRow = 3; ScheduleEndRow = 98
                 GmtColumn = 1; LocalColumn = 2; DayStartColumn = 4; DayEndColumn = 10
                 DuplicateLocalColumn = $null; DuplicateGmtColumn = $null
@@ -452,7 +443,7 @@ function Get-SportyNetWorksheetLayout($ws) {
         $sourceVariant = if ($leftIsCdmx) { "CDMX_LEFT_BRT_RIGHT" } else { "BRT_LEFT" }
 
         return [pscustomobject]@{
-            Worksheet = $ws; SheetName = if ($null -eq $ws.Name) { "?" } else { ConvertTo-SportySafeString $ws.Name }; IsFormatted = $false
+            Worksheet = $ws; SheetName = (ConvertTo-SportySafeString $ws.Name); IsFormatted = $false
             HeaderRow = 2; ScheduleStartRow = 3; ScheduleEndRow = 98
             GmtColumn = 1; LocalColumn = 2; DayStartColumn = 3; DayEndColumn = 9
             DuplicateLocalColumn = 10; DuplicateGmtColumn = 11
@@ -675,9 +666,8 @@ function Set-ThinBorders($range, [switch]$Inside) {
 }
 
 function Format-SportyNetWorksheet($ws, $layout, $xl) {
-    $sheetName = if ($null -eq $ws.Name) { "?" } else { ConvertTo-SportySafeString $ws.Name }
     if ($layout.IsFormatted) {
-        Show-Text "  [$sheetName] Already formatted - skipping" "  [$sheetName] Ya esta formateada - se omite" DarkGray
+        Show-Text "  [$($ws.Name)] Already formatted - skipping" "  [$($ws.Name)] Ya esta formateada - se omite" DarkGray
         return [pscustomobject]@{ Changed=$false; Anomalies=@() }
     }
     try { $timeData = Get-SportyNetTimeData $ws $layout }
@@ -707,19 +697,9 @@ function Format-SportyNetWorksheet($ws, $layout, $xl) {
     $ws.Range("A2:C2").HorizontalAlignment=$XL_CENTER; $ws.Range("A2:C2").VerticalAlignment=$XL_CENTER
     Set-ThinBorders ($ws.Range("A2:C2")) -Inside
 
-    # Write time values individually to avoid COM casting issues with arrays
-    # Try different COM properties to handle numeric time values correctly
-    for ($r = 3; $r -le 98; $r++) {
-        $rowIndex = $r - 3
-        $gmtValue = $timeData.GMT[$rowIndex]
-        $brtValue = $timeData.BRT[$rowIndex]
-        $cdmxValue = $timeData.CDMX[$rowIndex]
-        
-        # Use Value property instead of Value2 for better type handling
-        $ws.Cells.Item($r, 1).Value = $gmtValue
-        $ws.Cells.Item($r, 2).Value = $brtValue
-        $ws.Cells.Item($r, 3).Value = $cdmxValue
-    }
+    $matrix = [object[,]]::new(96,3)
+    for ($i=0; $i -lt 96; $i++) { $matrix[$i,0]=$timeData.GMT[$i]; $matrix[$i,1]=$timeData.BRT[$i]; $matrix[$i,2]=$timeData.CDMX[$i] }
+    $ws.Range("A3:C98").Value2=$matrix
     $ws.Range("A3:C98").NumberFormat="h:mm"; $ws.Range("A3:C98").Font.Name="Arial"; $ws.Range("A3:C98").Font.Size=14
     $ws.Range("A3:C98").Font.Color=$ColorBlack; $ws.Range("A3:A98").Font.Bold=$true; $ws.Range("B3:C98").Font.Bold=$false
     $ws.Range("A3:B98").Interior.Color=$ColorYellow; $ws.Range("C3:C98").Interior.Color=$ColorCdmx
@@ -762,10 +742,10 @@ function Format-SportyNetWorksheet($ws, $layout, $xl) {
     # Operators keep control of the workbook's native print layout.
 
     foreach ($anomaly in $timeData.Anomalies) {
-        Show-Text "  [$sheetName] Normalized $($anomaly.Address): $($anomaly.RawValue) -> $([DateTime]::FromOADate($anomaly.NormalizedValue).ToString('HH:mm'))" `
-                  "  [$sheetName] Normalizado $($anomaly.Address): $($anomaly.RawValue) -> $([DateTime]::FromOADate($anomaly.NormalizedValue).ToString('HH:mm'))" DarkYellow
+        Show-Text "  [$($ws.Name)] Normalized $($anomaly.Address): $($anomaly.RawValue) -> $([DateTime]::FromOADate($anomaly.NormalizedValue).ToString('HH:mm'))" `
+                  "  [$($ws.Name)] Normalizado $($anomaly.Address): $($anomaly.RawValue) -> $([DateTime]::FromOADate($anomaly.NormalizedValue).ToString('HH:mm'))" DarkYellow
     }
-    Show-Text "  [$sheetName] SportyNet formatting completed" "  [$sheetName] Formato SportyNet completado" Green
+    Show-Text "  [$($ws.Name)] SportyNet formatting completed" "  [$($ws.Name)] Formato SportyNet completado" Green
     return [pscustomobject]@{ Changed=$true; Anomalies=$timeData.Anomalies }
 }
 
@@ -911,32 +891,15 @@ foreach ($f in $files) {
             }
             $selectedLayouts=Select-ItemsByRule $layouts "SPORTYNET"
             foreach ($layout in $selectedLayouts) {
-                $sheetName = if ($null -eq $layout.Worksheet.Name) { "?" } else { ConvertTo-SportySafeString $layout.Worksheet.Name }
-                $lbl = "$($f.Name) > $sheetName"
+                $lbl="$($f.Name) > $($layout.SheetName)"
                 try {
                     $result=Format-SportyNetWorksheet $layout.Worksheet $layout $xl
                     if ($result.Changed) { $workbookChanged=$true; $rptUpdated += $lbl }
                     else { $rptSkipped += "$lbl ($(Get-Text 'already formatted' 'ya formateada'))" }
                 } catch {
-                    $errorDetails = $_.Exception.Message
-                    $errorType = $_.Exception.GetType().FullName
-                    $errorPos = $_.InvocationInfo.PositionMessage
-                    $errorScript = $_.InvocationInfo.ScriptName
-                    $errorLine = $_.InvocationInfo.ScriptLineNumber
-                    
-                    Show-Text "  [$sheetName] ERROR: $errorDetails" `
-                              "  [$sheetName] ERROR: $errorDetails" Red
-                    Show-Text "  [$sheetName] TYPE: $errorType LINE: $errorLine" `
-                              "  [$sheetName] TIPO: $errorType LINEA: $errorLine" DarkGray
-                    Show-Text "  [$sheetName] POS: $errorPos" `
-                              "  [$sheetName] POS: $errorPos" DarkGray
-                    
-                    if ($_.Exception.InnerException) {
-                        Show-Text "  [$sheetName] INNER: $($_.Exception.InnerException.Message)" `
-                                  "  [$sheetName] INTERNO: $($_.Exception.InnerException.Message)" DarkGray
-                    }
-                    
-                    $rptErrors += "$lbl : $errorDetails"
+                    Show-Text "  [$($layout.SheetName)] ERROR: $($_.Exception.Message)" `
+                              "  [$($layout.SheetName)] ERROR: $($_.Exception.Message)" Red
+                    $rptErrors += "$lbl : $($_.Exception.Message)"
                 }
             }
         } else {
@@ -1170,8 +1133,9 @@ foreach ($f in $files) {
                                 Fill-UtcTimes $ws @("A","K") 3 $DataRowEnd $startMins 30 $UTC_LABEL
 
                                 # STEP 5: Formatting
+                                $gridLayout = Get-GridLayout $gridType
                                 $ur = $ws.UsedRange
-                                try { $ur.WrapText = $true ; $ur.Font.Size = $FontSize } catch {}
+                                try { $ur.WrapText = $true ; $ur.Font.Size = $gridLayout.FontSize } catch {}
                                 if ($isCATV) { try { $ur.Font.Bold = $true } catch {} }
                                 # TVD: bold the ET and UTC time columns
                                 if ($isTVD) {
@@ -1179,15 +1143,15 @@ foreach ($f in $files) {
                                     try { $ws.Columns("J:K").Font.Bold = $true } catch {}
                                 }
                                 try {
-                                    $ws.Columns("A:B").ColumnWidth = $SmallColW
-                                    $ws.Columns("J:K").ColumnWidth = $SmallColW
-                                    $ws.Columns("C:I").ColumnWidth = $DefaultColW
+                                    $ws.Columns("A:B").ColumnWidth = $gridLayout.SmallColW
+                                    $ws.Columns("J:K").ColumnWidth = $gridLayout.SmallColW
+                                    $ws.Columns("C:I").ColumnWidth = $gridLayout.DefaultColW
                                 } catch {}
                                 try {
                                     $fr = [int]$ur.Row ; $lr = [int]($ur.Row + $ur.Rows.Count - 1)
-                                    $ws.Rows("${fr}:${lr}").RowHeight = $DefaultRowH
-                                    $ws.Rows($fr).RowHeight = $HeaderRowH
-                                    if ($lr -gt $fr) { $ws.Rows($fr + 1).RowHeight = $HeaderRowH }
+                                    $ws.Rows("${fr}:${lr}").RowHeight = $gridLayout.DefaultRowH
+                                    $ws.Rows($fr).RowHeight = $gridLayout.HeaderRowH
+                                    if ($lr -gt $fr) { $ws.Rows($fr + 1).RowHeight = $gridLayout.HeaderRowH }
                                 } catch {}
                                 Apply-PrintSetup $ws $xl
 
@@ -1305,6 +1269,9 @@ foreach ($f in $files) {
                             $startMins = $UTC_START_H * 60
                             Fill-UtcTimes $ws @($utcLetter_L, $utcLetter_R) $dataStart $DataRowEnd $startMins 30 $UTC_LABEL
 
+                            # Get per-grid layout settings
+                            $gridLayout = Get-GridLayout $gridType
+
                             # STEP 9 - Restore title row
                             # Column insertions in STEP 7 shift/break row 1 merge for all grids
                             # Always restore title after column ops
@@ -1317,9 +1284,9 @@ foreach ($f in $files) {
                                     $ws.Range($ws.Cells.Item(1,$newFc), $ws.Cells.Item(1,$newLc)).Merge() | Out-Null
                                     $ws.Cells.Item(1, $newFc).HorizontalAlignment = -4108
                                     $ws.Cells.Item(1, $newFc).Font.Bold           = $true
-                                    $ws.Cells.Item(1, $newFc).Font.Size           = $FontSize
+                                    $ws.Cells.Item(1, $newFc).Font.Size           = $gridLayout.FontSize
                                     $ws.Cells.Item(1, $newFc).Font.Color          = 0
-                                    $ws.Rows(1).RowHeight = $HeaderRowH
+                                    $ws.Rows(1).RowHeight = $gridLayout.HeaderRowH
                                 } catch {}
                             } else {
                                 try {
@@ -1330,31 +1297,31 @@ foreach ($f in $files) {
                                     $ws.Range($ws.Cells.Item(1,$newFc2), $ws.Cells.Item(1,$newLc2)).Merge() | Out-Null
                                     $ws.Cells.Item(1, $newFc2).HorizontalAlignment = -4108
                                     $ws.Cells.Item(1, $newFc2).Font.Bold           = $true
-                                    $ws.Cells.Item(1, $newFc2).Font.Size           = $FontSize
+                                    $ws.Cells.Item(1, $newFc2).Font.Size           = $layout.FontSize
                                     $ws.Cells.Item(1, $newFc2).Font.Color          = 0
-                                    $ws.Rows(1).RowHeight = $HeaderRowH
+                                    $ws.Rows(1).RowHeight = $layout.HeaderRowH
                                 } catch {}
                             }
 
                             # STEP 10 - Formatting
                             $ur = $ws.UsedRange
-                            try { $ur.WrapText = $true ; $ur.Font.Size = $FontSize } catch {}
+                            try { $ur.WrapText = $true ; $ur.Font.Size = $gridLayout.FontSize } catch {}
                             if ($isPas -or $isTodo) { try { $ur.Font.Bold = $true } catch {} }
 
-                            $twStr = if ($isPas -or $isTodo) { $PF_TimeColW } else { $SmallColW }
+                            $twStr = if ($isPas -or $isTodo) { $PF_TimeColW } else { $gridLayout.SmallColW }
                             try { $ws.Columns("${utcLetter_L}:${etLetter_L}").ColumnWidth = $twStr } catch {}
                             try { $ws.Columns("${etLetter_R}:${utcLetter_R}").ColumnWidth = $twStr } catch {}
 
                             $centerL = ColLetter ([int]$ws.Range($etLetter_L + "1").Column + 1)
                             $centerR = ColLetter ([int]$ws.Range($etLetter_R + "1").Column - 1)
-                            $cw = if ($isPasLatam -or $isTodo) { $PF_CenterW } else { $DefaultColW }
+                            $cw = if ($isPasLatam -or $isTodo) { $PF_CenterW } else { $gridLayout.DefaultColW }
                             try { $ws.Columns("${centerL}:${centerR}").ColumnWidth = $cw } catch {}
 
                             try {
                                 $fr = [int]$ur.Row ; $lr = [int]($ur.Row + $ur.Rows.Count - 1)
-                                $ws.Rows("${fr}:${lr}").RowHeight = $DefaultRowH
-                                $ws.Rows($fr).RowHeight = $HeaderRowH
-                                if ($lr -gt $fr) { $ws.Rows($fr + 1).RowHeight = $HeaderRowH }
+                                $ws.Rows("${fr}:${lr}").RowHeight = $gridLayout.DefaultRowH
+                                $ws.Rows($fr).RowHeight = $gridLayout.HeaderRowH
+                                if ($lr -gt $fr) { $ws.Rows($fr + 1).RowHeight = $gridLayout.HeaderRowH }
                             } catch {}
                             if ($isPas -or $isTodo) {
                                 try { $ws.Rows("3:50").RowHeight = 22 } catch {}

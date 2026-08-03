@@ -7,7 +7,7 @@
 
 # >>> BEGIN MANAGED SETTINGS >>>
 $ManagedSettings = [ordered]@{
-    Version             = "2.0.2-dev"
+    Version             = "2.0.3-dev"
     Language            = "English"
     UtcOffset           = -4
     UtcLabel            = "UTC"
@@ -21,6 +21,15 @@ $ManagedSettings = [ordered]@{
         TODO_NOVELAS     = [ordered]@{ Mode = "Last";  Count = 5 }
         REV_TV           = [ordered]@{ Mode = "All";   Count = 0 }
         SPORTYNET        = [ordered]@{ Mode = "All";   Count = 0 }
+    }
+    Layouts = [ordered]@{
+        CATV             = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
+        TVD              = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
+        PASIONES_LATAM   = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
+        PASIONES_US      = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
+        TODO_NOVELAS     = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
+        REV_TV           = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
+        SPORTYNET        = [ordered]@{ FontSize = 14; DefaultRowHeight = 25; HeaderRowHeight = 35; SmallColumnWidth = 7; DefaultColumnWidth = 37 }
     }
 }
 # <<< END MANAGED SETTINGS <<<
@@ -41,6 +50,15 @@ $DefaultColW = 37
 $PF_TimeColW = 8
 $PF_CenterW  = 30
 $DataRowEnd  = 50
+
+# Default layout values (used if not overridden in settings)
+$DefaultLayout = [ordered]@{
+    FontSize     = $FontSize
+    DefaultRowH  = $DefaultRowH
+    HeaderRowH   = $HeaderRowH
+    SmallColW    = $SmallColW
+    DefaultColW  = $DefaultColW
+}
 
 # SportyNet constants. These are intentionally independent of the
 # global UTC setting because the source grid already supplies GMT/BRT.
@@ -213,6 +231,22 @@ function Get-TabRule([string]$gridType) {
         if ($null -ne $rule) { return $rule }
     } catch {}
     return [ordered]@{ Mode = "All"; Count = 0 }
+}
+
+function Get-GridLayout([string]$gridType) {
+    try {
+        $gridLayout = $ManagedSettings.Layouts[$gridType]
+        if ($null -ne $gridLayout) {
+            return [ordered]@{
+                FontSize     = [int]$gridLayout.FontSize
+                DefaultRowH  = [double]$gridLayout.DefaultRowHeight
+                HeaderRowH   = [double]$gridLayout.HeaderRowHeight
+                SmallColW    = [double]$gridLayout.SmallColumnWidth
+                DefaultColW  = [double]$gridLayout.DefaultColumnWidth
+            }
+        }
+    } catch {}
+    return $DefaultLayout
 }
 
 function Select-ItemsByRule($items, [string]$gridType) {
@@ -1099,8 +1133,9 @@ foreach ($f in $files) {
                                 Fill-UtcTimes $ws @("A","K") 3 $DataRowEnd $startMins 30 $UTC_LABEL
 
                                 # STEP 5: Formatting
+                                $gridLayout = Get-GridLayout $gridType
                                 $ur = $ws.UsedRange
-                                try { $ur.WrapText = $true ; $ur.Font.Size = $FontSize } catch {}
+                                try { $ur.WrapText = $true ; $ur.Font.Size = $gridLayout.FontSize } catch {}
                                 if ($isCATV) { try { $ur.Font.Bold = $true } catch {} }
                                 # TVD: bold the ET and UTC time columns
                                 if ($isTVD) {
@@ -1108,15 +1143,15 @@ foreach ($f in $files) {
                                     try { $ws.Columns("J:K").Font.Bold = $true } catch {}
                                 }
                                 try {
-                                    $ws.Columns("A:B").ColumnWidth = $SmallColW
-                                    $ws.Columns("J:K").ColumnWidth = $SmallColW
-                                    $ws.Columns("C:I").ColumnWidth = $DefaultColW
+                                    $ws.Columns("A:B").ColumnWidth = $gridLayout.SmallColW
+                                    $ws.Columns("J:K").ColumnWidth = $gridLayout.SmallColW
+                                    $ws.Columns("C:I").ColumnWidth = $gridLayout.DefaultColW
                                 } catch {}
                                 try {
                                     $fr = [int]$ur.Row ; $lr = [int]($ur.Row + $ur.Rows.Count - 1)
-                                    $ws.Rows("${fr}:${lr}").RowHeight = $DefaultRowH
-                                    $ws.Rows($fr).RowHeight = $HeaderRowH
-                                    if ($lr -gt $fr) { $ws.Rows($fr + 1).RowHeight = $HeaderRowH }
+                                    $ws.Rows("${fr}:${lr}").RowHeight = $gridLayout.DefaultRowH
+                                    $ws.Rows($fr).RowHeight = $gridLayout.HeaderRowH
+                                    if ($lr -gt $fr) { $ws.Rows($fr + 1).RowHeight = $gridLayout.HeaderRowH }
                                 } catch {}
                                 Apply-PrintSetup $ws $xl
 
@@ -1234,6 +1269,9 @@ foreach ($f in $files) {
                             $startMins = $UTC_START_H * 60
                             Fill-UtcTimes $ws @($utcLetter_L, $utcLetter_R) $dataStart $DataRowEnd $startMins 30 $UTC_LABEL
 
+                            # Get per-grid layout settings
+                            $gridLayout = Get-GridLayout $gridType
+
                             # STEP 9 - Restore title row
                             # Column insertions in STEP 7 shift/break row 1 merge for all grids
                             # Always restore title after column ops
@@ -1246,9 +1284,9 @@ foreach ($f in $files) {
                                     $ws.Range($ws.Cells.Item(1,$newFc), $ws.Cells.Item(1,$newLc)).Merge() | Out-Null
                                     $ws.Cells.Item(1, $newFc).HorizontalAlignment = -4108
                                     $ws.Cells.Item(1, $newFc).Font.Bold           = $true
-                                    $ws.Cells.Item(1, $newFc).Font.Size           = $FontSize
+                                    $ws.Cells.Item(1, $newFc).Font.Size           = $gridLayout.FontSize
                                     $ws.Cells.Item(1, $newFc).Font.Color          = 0
-                                    $ws.Rows(1).RowHeight = $HeaderRowH
+                                    $ws.Rows(1).RowHeight = $gridLayout.HeaderRowH
                                 } catch {}
                             } else {
                                 try {
@@ -1259,31 +1297,31 @@ foreach ($f in $files) {
                                     $ws.Range($ws.Cells.Item(1,$newFc2), $ws.Cells.Item(1,$newLc2)).Merge() | Out-Null
                                     $ws.Cells.Item(1, $newFc2).HorizontalAlignment = -4108
                                     $ws.Cells.Item(1, $newFc2).Font.Bold           = $true
-                                    $ws.Cells.Item(1, $newFc2).Font.Size           = $FontSize
+                                    $ws.Cells.Item(1, $newFc2).Font.Size           = $layout.FontSize
                                     $ws.Cells.Item(1, $newFc2).Font.Color          = 0
-                                    $ws.Rows(1).RowHeight = $HeaderRowH
+                                    $ws.Rows(1).RowHeight = $layout.HeaderRowH
                                 } catch {}
                             }
 
                             # STEP 10 - Formatting
                             $ur = $ws.UsedRange
-                            try { $ur.WrapText = $true ; $ur.Font.Size = $FontSize } catch {}
+                            try { $ur.WrapText = $true ; $ur.Font.Size = $gridLayout.FontSize } catch {}
                             if ($isPas -or $isTodo) { try { $ur.Font.Bold = $true } catch {} }
 
-                            $twStr = if ($isPas -or $isTodo) { $PF_TimeColW } else { $SmallColW }
+                            $twStr = if ($isPas -or $isTodo) { $PF_TimeColW } else { $gridLayout.SmallColW }
                             try { $ws.Columns("${utcLetter_L}:${etLetter_L}").ColumnWidth = $twStr } catch {}
                             try { $ws.Columns("${etLetter_R}:${utcLetter_R}").ColumnWidth = $twStr } catch {}
 
                             $centerL = ColLetter ([int]$ws.Range($etLetter_L + "1").Column + 1)
                             $centerR = ColLetter ([int]$ws.Range($etLetter_R + "1").Column - 1)
-                            $cw = if ($isPasLatam -or $isTodo) { $PF_CenterW } else { $DefaultColW }
+                            $cw = if ($isPasLatam -or $isTodo) { $PF_CenterW } else { $gridLayout.DefaultColW }
                             try { $ws.Columns("${centerL}:${centerR}").ColumnWidth = $cw } catch {}
 
                             try {
                                 $fr = [int]$ur.Row ; $lr = [int]($ur.Row + $ur.Rows.Count - 1)
-                                $ws.Rows("${fr}:${lr}").RowHeight = $DefaultRowH
-                                $ws.Rows($fr).RowHeight = $HeaderRowH
-                                if ($lr -gt $fr) { $ws.Rows($fr + 1).RowHeight = $HeaderRowH }
+                                $ws.Rows("${fr}:${lr}").RowHeight = $gridLayout.DefaultRowH
+                                $ws.Rows($fr).RowHeight = $gridLayout.HeaderRowH
+                                if ($lr -gt $fr) { $ws.Rows($fr + 1).RowHeight = $gridLayout.HeaderRowH }
                             } catch {}
                             if ($isPas -or $isTodo) {
                                 try { $ws.Rows("3:50").RowHeight = 22 } catch {}
