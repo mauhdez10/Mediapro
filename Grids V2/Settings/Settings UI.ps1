@@ -88,7 +88,17 @@ function Save-Settings($data) {
     $block=Get-ManagedBlock $data
     $updated=$content.Substring(0,$start)+$block+$content.Substring($end)
     $backupDir=Join-Path $settingsFolder "Backups"; [void](New-Item -ItemType Directory -Path $backupDir -Force)
-    $backup=Join-Path $backupDir ("FormatGrids_{0}.ps1" -f (Get-Date -Format 'yyyyMMdd_HHmmss'))
+    # Millisecond precision plus a uniqueness loop: two saves within the same second
+    # (or, for scripted callers, the same millisecond) must never collide and silently
+    # overwrite an earlier backup -- that would quietly destroy the one thing recovery
+    # depends on.
+    $stamp=Get-Date -Format 'yyyyMMdd_HHmmss_fff'
+    $backup=Join-Path $backupDir ("FormatGrids_{0}.ps1" -f $stamp)
+    $suffix=1
+    while (Test-Path -LiteralPath $backup) {
+        $backup=Join-Path $backupDir ("FormatGrids_{0}_{1}.ps1" -f $stamp,$suffix)
+        $suffix++
+    }
     Copy-Item -LiteralPath $scriptPath -Destination $backup -Force
     $temp="$scriptPath.tmp"
     [IO.File]::WriteAllText($temp,$updated,[Text.UTF8Encoding]::new($false))
@@ -107,6 +117,70 @@ function Save-Settings($data) {
     if (Test-Path -LiteralPath (Split-Path $aiLog -Parent)) {
         "$(Get-Date -Format s) language=$($data.language) utc=$($data.utcOffset) label=$($data.utcLabel) printer=$($data.printerName)" | Add-Content -LiteralPath $aiLog -Encoding UTF8
     }
+}
+
+function Get-AvailableBackups {
+    $backupDir=Join-Path $settingsFolder "Backups"
+    if (-not (Test-Path -LiteralPath $backupDir)) { return @() }
+    return @(Get-ChildItem -LiteralPath $backupDir -Filter "FormatGrids_*.ps1" -File | Sort-Object LastWriteTime -Descending)
+}
+
+# Reconstructs a settings $data object by reading and evaluating the managed
+# block out of a given FormatGrids.ps1 (or backup copy of one). Restoring a
+# backup therefore reuses Save-Settings end to end -- same validation, same
+# automatic backup-of-current-state-first, same AI/Source sync -- instead of
+# duplicating that logic for the restore path.
+function Read-ManagedBlockAsData([string]$ps1Path) {
+    if (-not (Test-Path -LiteralPath $ps1Path)) { throw "File not found: $ps1Path" }
+    $content=[IO.File]::ReadAllText($ps1Path)
+    $start=$content.IndexOf($beginMarker); $end=$content.IndexOf($endMarker)
+    if ($start -lt 0 -or $end -lt $start) { throw "Managed settings markers were not found in $(Split-Path $ps1Path -Leaf)." }
+    $end += $endMarker.Length
+    $blockLines = $content.Substring($start,$end-$start) -split "`r?`n" | Where-Object { $_ -ne $beginMarker -and $_ -ne $endMarker }
+    $code = ($blockLines -join "`r`n") + "`r`n`$ManagedSettings"
+    $tokens=$null; $errors=$null
+    [System.Management.Automation.Language.Parser]::ParseInput($code,[ref]$tokens,[ref]$errors) | Out-Null
+    if ($errors.Count -gt 0) { throw ("Backup failed validation: " + $errors[0].Message) }
+    $ms = & ([scriptblock]::Create($code))
+
+    $result=[ordered]@{
+        language=[string]$ms.Language; utcOffset=[int]$ms.UtcOffset; utcLabel=[string]$ms.UtcLabel
+        printerColorEnabled=[bool]$ms.PrinterColorEnabled; printerName=[string]$ms.PrinterName
+        tabs=[ordered]@{}; layout=[ordered]@{}
+    }
+    foreach ($name in @('CATV','TVD','PASIONES_LATAM','PASIONES_US','TODO_NOVELAS','REV_TV','SPORTYNET')) {
+        $t=$ms.Tabs.$name
+        if ($null -eq $t) { throw "Backup is missing Tabs.$name -- likely from an older format, cannot restore safely." }
+        if ([string]$t.Mode -eq 'All') { $tabsVal='X'; $posVal='First' } else { $tabsVal=[string]$t.Count; $posVal=[string]$t.Mode }
+        $result.tabs[$name]=[ordered]@{tabs=$tabsVal;position=$posVal}
+        $l=$ms.Layout.$name
+        if ($null -eq $l) { throw "Backup is missing Layout.$name -- likely from an older format, cannot restore safely." }
+        $result.layout[$name]=[ordered]@{
+            fontSize=[string]$l.FontSize; defaultRowHeight=[string]$l.DefaultRowHeight
+            headerRowHeight=[string]$l.HeaderRowHeight; smallColumnWidth=[string]$l.SmallColumnWidth
+            defaultColumnWidth=[string]$l.DefaultColumnWidth
+        }
+    }
+    return [pscustomobject]$result
+}
+
+function Show-BackupPicker($backups) {
+    $picker=New-Object Windows.Forms.Form
+    $picker.Text='Restore Backup / Restaurar Respaldo'
+    $picker.Size=New-Object Drawing.Size(420,380); $picker.StartPosition='CenterParent'
+    $picker.MaximizeBox=$false; $picker.MinimizeBox=$false
+    $lbl=New-Object Windows.Forms.Label; $lbl.Text='Choose a backup to restore / Elija un respaldo para restaurar:'; $lbl.Location='10,10'; $lbl.Size='390,20'
+    $list=New-Object Windows.Forms.ListBox; $list.Location='10,35'; $list.Size='390,250'
+    foreach ($b in $backups) { [void]$list.Items.Add(('{0:yyyy-MM-dd HH:mm:ss}   {1}' -f $b.LastWriteTime,$b.Name)) }
+    if ($list.Items.Count -gt 0) { $list.SelectedIndex=0 }
+    $ok=New-Object Windows.Forms.Button; $ok.Text='Restore / Restaurar'; $ok.Location='10,300'; $ok.Size='180,36'; $ok.DialogResult='OK'
+    $cancel=New-Object Windows.Forms.Button; $cancel.Text='Cancel / Cancelar'; $cancel.Location='220,300'; $cancel.Size='180,36'; $cancel.DialogResult='Cancel'
+    $picker.Controls.AddRange(@($lbl,$list,$ok,$cancel))
+    $picker.AcceptButton=$ok; $picker.CancelButton=$cancel
+    $picker.Add_Shown({ $list.Focus() })
+    $result=$picker.ShowDialog()
+    if ($result -eq 'OK' -and $list.SelectedIndex -ge 0) { return $backups[$list.SelectedIndex] }
+    return $null
 }
 
 $data=Load-Settings
@@ -153,8 +227,9 @@ foreach ($name in $display.Keys) { $idx=$grid.Rows.Add($display[$name],[string]$
 $save=New-Object Windows.Forms.Button; $save.Text='Save Settings / Guardar'; $save.Location='10,440'; $save.Size='210,42'
 $reset=New-Object Windows.Forms.Button; $reset.Text='Reset Defaults / Predeterminados'; $reset.Location='230,440'; $reset.Size='230,42'
 $close=New-Object Windows.Forms.Button; $close.Text='Close / Cerrar'; $close.Location='470,440'; $close.Size='210,42'
+$restoreBackup=New-Object Windows.Forms.Button; $restoreBackup.Text='Restore Backup / Restaurar Respaldo'; $restoreBackup.Location='10,490'; $restoreBackup.Size='300,42'
 
-$tabGeneral.Controls.AddRange(@($labelLang,$comboLang,$labelOffset,$numOffset,$labelUtc,$textUtc,$checkPrinter,$labelPrinter,$textPrinter,$info,$grid,$save,$reset,$close))
+$tabGeneral.Controls.AddRange(@($labelLang,$comboLang,$labelOffset,$numOffset,$labelUtc,$textUtc,$checkPrinter,$labelPrinter,$textPrinter,$info,$grid,$save,$reset,$close,$restoreBackup))
 
 # ===== Layout Tab Controls =====
 $infoLayout=New-Object Windows.Forms.Label; $infoLayout.Text='Set row heights, column widths, and font size per grid type. All values must be positive integers.'; $infoLayout.Location='10,10'; $infoLayout.Size='780,35'
@@ -176,8 +251,9 @@ foreach ($name in $display.Keys) {
 $saveLayout=New-Object Windows.Forms.Button; $saveLayout.Text='Save Settings / Guardar'; $saveLayout.Location='10,440'; $saveLayout.Size='210,42'
 $resetLayout=New-Object Windows.Forms.Button; $resetLayout.Text='Reset Defaults / Predeterminados'; $resetLayout.Location='230,440'; $resetLayout.Size='230,42'
 $closeLayout=New-Object Windows.Forms.Button; $closeLayout.Text='Close / Cerrar'; $closeLayout.Location='470,440'; $closeLayout.Size='210,42'
+$restoreLayout=New-Object Windows.Forms.Button; $restoreLayout.Text='Restore Backup / Restaurar Respaldo'; $restoreLayout.Location='10,490'; $restoreLayout.Size='300,42'
 
-$tabLayout.Controls.AddRange(@($infoLayout,$gridLayout,$saveLayout,$resetLayout,$closeLayout))
+$tabLayout.Controls.AddRange(@($infoLayout,$gridLayout,$saveLayout,$resetLayout,$closeLayout,$restoreLayout))
 
 # ===== Form Controls =====
 $form.Controls.Add($tabControl)
@@ -206,7 +282,37 @@ $reset.Add_Click({
 })
 $close.Add_Click({$form.Close()})
 
+function Refresh-FormFromData($d) {
+    $comboLang.SelectedItem=[string]$d.language; $numOffset.Value=[decimal]$d.utcOffset; $textUtc.Text=[string]$d.utcLabel
+    $checkPrinter.Checked=[bool]$d.printerColorEnabled; $textPrinter.Text=[string]$d.printerName
+    foreach ($row in $grid.Rows) { $name=$row.Tag; $row.Cells['Tabs'].Value=[string]$d.tabs.$name.tabs; $row.Cells['Position'].Value=[string]$d.tabs.$name.position }
+    foreach ($row in $gridLayout.Rows) {
+        $name=$row.Tag
+        $row.Cells['FontSize'].Value=[string]$d.layout.$name.fontSize
+        $row.Cells['DefaultRowHeight'].Value=[string]$d.layout.$name.defaultRowHeight
+        $row.Cells['HeaderRowHeight'].Value=[string]$d.layout.$name.headerRowHeight
+        $row.Cells['SmallColumnWidth'].Value=[string]$d.layout.$name.smallColumnWidth
+        $row.Cells['DefaultColumnWidth'].Value=[string]$d.layout.$name.defaultColumnWidth
+    }
+}
+$restoreBackup.Add_Click({
+    try {
+        $backups=Get-AvailableBackups
+        if ($backups.Count -eq 0) {
+            [Windows.Forms.MessageBox]::Show('No backups found yet. One is created automatically every time you save. / No hay respaldos todavia. Se crea uno automaticamente cada vez que guarda.','Grid Formatter V2','OK','Information') | Out-Null
+            return
+        }
+        $chosen=Show-BackupPicker $backups
+        if ($null -eq $chosen) { return }
+        $restoredData=Read-ManagedBlockAsData $chosen.FullName
+        Save-Settings $restoredData
+        Refresh-FormFromData $restoredData
+        [Windows.Forms.MessageBox]::Show("Restored from $($chosen.Name). Your settings just before this restore were backed up automatically. / Restaurado desde $($chosen.Name). Su configuracion justo antes de este restauro se respaldo automaticamente.",'Grid Formatter V2','OK','Information') | Out-Null
+    } catch { [Windows.Forms.MessageBox]::Show($_.Exception.Message,'Error','OK','Error') | Out-Null }
+})
+
 $saveLayout.Add_Click({ & $save.Add_Click.Invoke() })
+$restoreLayout.Add_Click({ & $restoreBackup.Add_Click.Invoke() })
 $resetLayout.Add_Click({
     $d=Clone-Defaults
     foreach ($row in $gridLayout.Rows) {
