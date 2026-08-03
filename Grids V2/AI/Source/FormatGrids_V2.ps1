@@ -378,7 +378,9 @@ function Get-SportyNetWorksheetLayout($ws) {
         $third = Get-SportyCellValueText ($ws.Cells.Item(2,3))
         if ($leftIsBrt -and (Get-SportyHeaderToken $third) -eq "CDMX") {
             for ($c = 4; $c -le 10; $c++) {
-                if (-not (Test-SportyDateHeader $ws.Cells.Item(2,$c).Value2)) { return $null }
+                $rawValue = $ws.Cells.Item(2,$c).Value2
+                $unwrappedValue = Get-SportyScalarValue $rawValue
+                if (-not (Test-SportyDateHeader $unwrappedValue)) { return $null }
             }
             return [pscustomobject]@{
                 Worksheet = $ws; SheetName = (ConvertTo-SportySafeString $ws.Name); IsFormatted = $true
@@ -392,7 +394,9 @@ function Get-SportyNetWorksheetLayout($ws) {
         }
 
         for ($c = 3; $c -le 9; $c++) {
-            if (-not (Test-SportyDateHeader $ws.Cells.Item(2,$c).Value2)) { return $null }
+            $rawValue = $ws.Cells.Item(2,$c).Value2
+            $unwrappedValue = Get-SportyScalarValue $rawValue
+            if (-not (Test-SportyDateHeader $unwrappedValue)) { return $null }
         }
 
         $dupLocal = Get-SportyCellValueText ($ws.Cells.Item(2,10))
@@ -671,9 +675,9 @@ function Format-SportyNetWorksheet($ws, $layout, $xl) {
         return [pscustomobject]@{ Changed=$false; Anomalies=@() }
     }
     try { $timeData = Get-SportyNetTimeData $ws $layout }
-    catch { throw "SportyNet time stage failed: $($_.Exception.Message)" }
+    catch { throw "SportyNet time stage failed: $($_.Exception.Message) | Stack: $($_.ScriptStackTrace)" }
     try { $programData = Get-SportyNetProgramData $ws $layout }
-    catch { throw "SportyNet program stage failed: $($_.Exception.Message)" }
+    catch { throw "SportyNet program stage failed: $($_.Exception.Message) | Stack: $($_.ScriptStackTrace)" }
     $title = ConvertTo-SportySafeString $layout.Title
 
     # Unmerge the title before structural column changes, then delete the
@@ -698,8 +702,26 @@ function Format-SportyNetWorksheet($ws, $layout, $xl) {
     Set-ThinBorders ($ws.Range("A2:C2")) -Inside
 
     $matrix = [object[,]]::new(96,3)
-    for ($i=0; $i -lt 96; $i++) { $matrix[$i,0]=$timeData.GMT[$i]; $matrix[$i,1]=$timeData.BRT[$i]; $matrix[$i,2]=$timeData.CDMX[$i] }
-    $ws.Range("A3:C98").Value2=$matrix
+    try {
+        for ($i=0; $i -lt 96; $i++) {
+            $matrix[$i,0]=$timeData.GMT[$i]
+            $matrix[$i,1]=$timeData.BRT[$i]
+            $matrix[$i,2]=$timeData.CDMX[$i]
+        }
+    } catch {
+        throw "Matrix construction failed at index ${i}: $($_.Exception.Message) | Type: $($_.Exception.GetType().FullName)"
+    }
+    try {
+        # On this Excel/COM install, Range.Value2's property-set binder mis-resolves a
+        # bulk 96x3 object[,] argument and throws "Unable to cast System.Object[,] to
+        # System.String" -- reproducible via string-address Range, cell-pair Range, and
+        # reflection InvokeMember alike. Range.Value does not hit this; use it for the
+        # bulk numeric write (harmless here since these are plain doubles, not
+        # currency/date-typed values).
+        $ws.Range("A3:C98").Value=$matrix
+    } catch {
+        throw "Matrix assignment failed: $($_.Exception.Message) | Type: $($_.Exception.GetType().FullName)"
+    }
     $ws.Range("A3:C98").NumberFormat="h:mm"; $ws.Range("A3:C98").Font.Name="Arial"; $ws.Range("A3:C98").Font.Size=14
     $ws.Range("A3:C98").Font.Color=$ColorBlack; $ws.Range("A3:A98").Font.Bold=$true; $ws.Range("B3:C98").Font.Bold=$false
     $ws.Range("A3:B98").Interior.Color=$ColorYellow; $ws.Range("C3:C98").Interior.Color=$ColorCdmx
@@ -897,9 +919,16 @@ foreach ($f in $files) {
                     if ($result.Changed) { $workbookChanged=$true; $rptUpdated += $lbl }
                     else { $rptSkipped += "$lbl ($(Get-Text 'already formatted' 'ya formateada'))" }
                 } catch {
-                    Show-Text "  [$($layout.SheetName)] ERROR: $($_.Exception.Message)" `
-                              "  [$($layout.SheetName)] ERROR: $($_.Exception.Message)" Red
-                    $rptErrors += "$lbl : $($_.Exception.Message)"
+                    $errorMsg = "$($_.Exception.Message)"
+                    $errorStack = "$($_.ScriptStackTrace)"
+                    if ($_.Exception.InnerException) {
+                        $errorMsg += " | Inner: $($_.Exception.InnerException.Message)"
+                    }
+                    Show-Text "  [$($layout.SheetName)] ERROR: $errorMsg" `
+                              "  [$($layout.SheetName)] ERROR: $errorMsg" Red
+                    Show-Text "  [$($layout.SheetName)] Stack: $errorStack" `
+                              "  [$($layout.SheetName)] Stack: $errorStack" DarkYellow
+                    $rptErrors += "$lbl : $errorMsg"
                 }
             }
         } else {
