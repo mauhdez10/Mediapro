@@ -146,7 +146,7 @@ $grid=New-Object Windows.Forms.DataGridView; $grid.Location='10,160'; $grid.Size
 $c1=New-Object Windows.Forms.DataGridViewTextBoxColumn; $c1.Name='GridType'; $c1.HeaderText='Grid type / Tipo'; $c1.ReadOnly=$true
 $c2=New-Object Windows.Forms.DataGridViewTextBoxColumn; $c2.Name='Tabs'; $c2.HeaderText='Tabs (X or number)'
 $c3=New-Object Windows.Forms.DataGridViewComboBoxColumn; $c3.Name='Position'; $c3.HeaderText='Position / Posicion'; [void]$c3.Items.AddRange(@('First','Last'))
-[void]$grid.Columns.AddRange(@($c1,$c2,$c3))
+[void]$grid.Columns.AddRange([Windows.Forms.DataGridViewColumn[]]@($c1,$c2,$c3))
 $display=[ordered]@{CATV='CATV';TVD='TVD';PASIONES_LATAM='Pasiones LATAM';PASIONES_US='Pasiones US';TODO_NOVELAS='Todo Novelas';REV_TV='REV TV';SPORTYNET='SportyNet'}
 foreach ($name in $display.Keys) { $idx=$grid.Rows.Add($display[$name],[string]$data.tabs.$name.tabs,[string]$data.tabs.$name.position); $grid.Rows[$idx].Tag=$name }
 
@@ -166,7 +166,7 @@ $l3=New-Object Windows.Forms.DataGridViewTextBoxColumn; $l3.Name='DefaultRowHeig
 $l4=New-Object Windows.Forms.DataGridViewTextBoxColumn; $l4.Name='HeaderRowHeight'; $l4.HeaderText='Header H'; $l4.Width=60
 $l5=New-Object Windows.Forms.DataGridViewTextBoxColumn; $l5.Name='SmallColumnWidth'; $l5.HeaderText='Small Col'; $l5.Width=60
 $l6=New-Object Windows.Forms.DataGridViewTextBoxColumn; $l6.Name='DefaultColumnWidth'; $l6.HeaderText='Col Width'; $l6.Width=60
-[void]$gridLayout.Columns.AddRange(@($l1,$l2,$l3,$l4,$l5,$l6))
+[void]$gridLayout.Columns.AddRange([Windows.Forms.DataGridViewColumn[]]@($l1,$l2,$l3,$l4,$l5,$l6))
 foreach ($name in $display.Keys) {
     $entry=$data.layout.$name
     $idx=$gridLayout.Rows.Add($display[$name],$entry.fontSize,$entry.defaultRowHeight,$entry.headerRowHeight,$entry.smallColumnWidth,$entry.defaultColumnWidth)
@@ -174,8 +174,8 @@ foreach ($name in $display.Keys) {
 }
 
 $saveLayout=New-Object Windows.Forms.Button; $saveLayout.Text='Save Settings / Guardar'; $saveLayout.Location='10,440'; $saveLayout.Size='210,42'
-$resetLayout=New-Object Windows.Forms.Button; $resetLayout.Text='Reset Defaults / Predeterminados'; $resetLayout.Location='230,440'; $resetLayout.Size='230,42
-$closeLayout=New-Object Windows.Forms.Button; $closeLayout.Text='Close / Cerrar'; $closeLayout.Location='470,440'; $closeLayout.Size='210,42
+$resetLayout=New-Object Windows.Forms.Button; $resetLayout.Text='Reset Defaults / Predeterminados'; $resetLayout.Location='230,440'; $resetLayout.Size='230,42'
+$closeLayout=New-Object Windows.Forms.Button; $closeLayout.Text='Close / Cerrar'; $closeLayout.Location='470,440'; $closeLayout.Size='210,42'
 
 $tabLayout.Controls.AddRange(@($infoLayout,$gridLayout,$saveLayout,$resetLayout,$closeLayout))
 

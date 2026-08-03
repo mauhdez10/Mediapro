@@ -341,25 +341,17 @@ function Test-SportyCdmxHeader($value) {
 }
 
 # Lightweight fallback used only for Excel files that match no known filename
-# route. It inspects one header row on the first worksheet only. Full workbook
-# validation is performed later after the file is routed as SportyNet.
+# route. Delegates to the authoritative layout check (Get-SportyNetWorksheetLayout)
+# so both the unformatted (duplicate BRT/GMT at J/K) and already-formatted
+# (CDMX at C, dates directly at D:J) signatures are recognized -- a file that
+# was already formatted in a prior run but saved under an unrecognized name
+# must still route as SportyNet so it can be skipped with "Already formatted",
+# not reported as an unknown grid type.
 function Test-SportyNetSoftSignature($wb) {
     try {
         if ($null -eq $wb -or [int]$wb.Worksheets.Count -lt 1) { return $false }
         $ws = $wb.Worksheets.Item(1)
-
-        $gmt = Get-SportyCellValueText ($ws.Cells.Item(2,1))
-        $leftLocal = Get-SportyCellValueText ($ws.Cells.Item(2,2))
-        if ((Get-SportyHeaderToken $gmt) -ne "GMT") { return $false }
-        if (-not (Test-SportyBrtHeader $leftLocal) -and -not (Test-SportyCdmxHeader $leftLocal)) { return $false }
-
-        for ($c = 3; $c -le 9; $c++) {
-            if (-not (Test-SportyDateHeader $ws.Cells.Item(2,$c).Value2)) { return $false }
-        }
-
-        $duplicateLocal = Get-SportyCellValueText ($ws.Cells.Item(2,10))
-        $duplicateGmt = Get-SportyCellValueText ($ws.Cells.Item(2,11))
-        return ((Test-SportyBrtHeader $duplicateLocal) -and (Get-SportyHeaderToken $duplicateGmt) -eq "GMT")
+        return ($null -ne (Get-SportyNetWorksheetLayout $ws))
     } catch {
         return $false
     }
