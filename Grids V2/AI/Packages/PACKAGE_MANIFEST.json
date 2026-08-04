@@ -2,12 +2,12 @@
   "version": "2.0.4-dev",
   "packages": {
     "Grids_V2_Full.zip": {
-      "size": 235826,
-      "sha256": "7fd52834792396272eb2e8e38029e934024168afc6462d21717199ddeaf42829"
+      "size": 237586,
+      "sha256": "e495aaf23eb7a3c85c6517b561e82682eef4032ef7ac0b7f916ce169bc319282"
     },
     "Grids_V2_Manager.zip": {
-      "size": 32019,
-      "sha256": "1cdcfa17497eb0111cf5b54fc6f33a49a1bc10cf490460edbac060c6c5d59bd1"
+      "size": 32899,
+      "sha256": "473a0d6491dcd9420ef9eb5c6ab6a5b861930c0727a5914f8d3322b35f81ad4e"
     },
     "Grids_V2_Operator.zip": {
       "size": 18270,
