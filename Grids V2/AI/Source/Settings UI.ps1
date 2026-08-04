@@ -1,4 +1,4 @@
-# Updated Settings UI.ps1 with Layout Settings tab
+﻿# Updated Settings UI.ps1 with Layout Settings tab
 # ================================================
 
 Add-Type -AssemblyName System.Windows.Forms

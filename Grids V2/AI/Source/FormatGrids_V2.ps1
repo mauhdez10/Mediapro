@@ -1,4 +1,4 @@
-# ===========================================================
+﻿# ===========================================================
 #  GRID FORMATTER V2 - FormatGrids.ps1
 # ===========================================================
 #  Runtime is self-contained. The Settings UI only rewrites the
@@ -33,6 +33,19 @@ $ManagedSettings = [ordered]@{
     }
 }
 # <<< END MANAGED SETTINGS <<<
+
+# Windows PowerShell 5.1's default console codepage (OEM/legacy, e.g. 437) and
+# $OutputEncoding (US-ASCII) cannot represent accented characters -- Spanish
+# text with a, e, i, o, u, n renders as "?" or "" on screen. This affects
+# only what's drawn to the console window; Excel cell data and transcript log
+# files were already correct UTF-8 regardless. Force UTF-8 for both the
+# console codepage and PowerShell's own output encoding before anything else
+# writes to the screen.
+try {
+    chcp 65001 | Out-Null
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+    $OutputEncoding = [System.Text.Encoding]::UTF8
+} catch {}
 
 $UTC_OFFSET  = [int]$ManagedSettings.UtcOffset
 $UTC_LABEL   = [string]$ManagedSettings.UtcLabel
@@ -473,10 +486,10 @@ function Get-CircularDistance([double]$first, [double]$second) {
 function ConvertTo-SportyNetTime($rawValue, [string]$displayedText, [string]$address, [bool]$hasFormula) {
     $classification = $null; $normalized = $null; $nonstandard = $false
     if ($null -eq $rawValue -or ($rawValue -is [string] -and [string]::IsNullOrWhiteSpace([string]$rawValue))) {
-        Throw-Text "${address}: blank time value. Displayed='$displayedText'." "${address}: valor de hora vacio. Mostrado='$displayedText'."
+        Throw-Text "${address}: blank time value. Displayed='$displayedText'." "${address}: valor de hora vacío. Mostrado='$displayedText'."
     }
     if ($rawValue -is [bool]) {
-        Throw-Text "${address}: Boolean is not a valid time." "${address}: un valor Booleano no es una hora valida."
+        Throw-Text "${address}: Boolean is not a valid time." "${address}: un valor Booleano no es una hora válida."
     }
     $numeric = $rawValue -is [byte] -or $rawValue -is [sbyte] -or $rawValue -is [int16] -or
                $rawValue -is [uint16] -or $rawValue -is [int32] -or $rawValue -is [uint32] -or
@@ -498,15 +511,15 @@ function ConvertTo-SportyNetTime($rawValue, [string]$displayedText, [string]$add
                 $classification = if ($hasFormula) { "FORMULA_TIME" } else { "RECOGNIZED_HHMM_NUMERIC" }
                 $nonstandard = $true
             } else {
-                Throw-Text "${address}: invalid or ambiguous numeric time '$rawValue'." "${address}: hora numerica invalida o ambigua '$rawValue'."
+                Throw-Text "${address}: invalid or ambiguous numeric time '$rawValue'." "${address}: hora numérica inválida o ambigua '$rawValue'."
             }
         } else {
-            Throw-Text "${address}: numeric time is outside accepted ranges '$rawValue'." "${address}: la hora numerica esta fuera del rango aceptado '$rawValue'."
+            Throw-Text "${address}: numeric time is outside accepted ranges '$rawValue'." "${address}: la hora numérica está fuera del rango aceptado '$rawValue'."
         }
     } elseif ($rawValue -is [string]) {
         $m = [regex]::Match([string]$rawValue, '^\s*(\d{1,2}):(\d{2})\s*$')
         if (-not $m.Success) {
-            Throw-Text "${address}: invalid or ambiguous text time '$rawValue'." "${address}: hora de texto invalida o ambigua '$rawValue'."
+            Throw-Text "${address}: invalid or ambiguous text time '$rawValue'." "${address}: hora de texto inválida o ambigua '$rawValue'."
         }
         $hours = [int]$m.Groups[1].Value; $minutes = [int]$m.Groups[2].Value
         if ($hours -lt 0 -or $hours -gt 23 -or $minutes -notin @(0,15,30,45)) {
@@ -564,7 +577,7 @@ function Get-SportyNetTimeData($ws, $layout) {
         for ($i = 1; $i -lt $seq.Values.Count; $i++) {
             $expected = Get-ModuloOne ($seq.Values[$i-1] + $SportyQuarterHour)
             if ((Get-CircularDistance $seq.Values[$i] $expected) -gt $SportyTimeTolerance) {
-                Throw-Text "$($seq.Name) quarter-hour sequence failed at row $($i+3)." "La secuencia de 15 minutos de $($seq.Name) fallo en la fila $($i+3)."
+                Throw-Text "$($seq.Name) quarter-hour sequence failed at row $($i+3)." "La secuencia de 15 minutos de $($seq.Name) falló en la fila $($i+3)."
             }
         }
     }
@@ -572,7 +585,7 @@ function Get-SportyNetTimeData($ws, $layout) {
     for ($i = 0; $i -lt $SportyScheduleRows; $i++) {
         $expectedGmt = Get-ModuloOne ($brt[$i] + $SportyThreeHours)
         if ((Get-CircularDistance $gmt[$i] $expectedGmt) -gt $SportyTimeTolerance) {
-            Throw-Text "GMT/BRT three-hour relationship failed at row $($i+3)." "La relacion de tres horas entre GMT y BRT fallo en la fila $($i+3)."
+            Throw-Text "GMT/BRT three-hour relationship failed at row $($i+3)." "La relación de tres horas entre GMT y BRT falló en la fila $($i+3)."
         }
     }
 
@@ -581,7 +594,7 @@ function Get-SportyNetTimeData($ws, $layout) {
         for ($i = 0; $i -lt $SportyScheduleRows; $i++) {
             $expectedCdmx = Get-ModuloOne ($brt[$i] - $SportyThreeHours)
             if ((Get-CircularDistance $existingCdmx[$i] $expectedCdmx) -gt $SportyTimeTolerance) {
-                Throw-Text "CDMX/Mex and BRT relationship failed at row $($i+3)." "La relacion entre CDMX/Mex y BRT fallo en la fila $($i+3)."
+                Throw-Text "CDMX/Mex and BRT relationship failed at row $($i+3)." "La relación entre CDMX/Mex y BRT falló en la fila $($i+3)."
             }
             $cdmx += [double]$existingCdmx[$i]
         }
@@ -661,7 +674,7 @@ function Get-SportyNetProgramData($ws, $layout) {
                 $area = $cell.MergeArea
                 $start = [int]$area.Row; $end = $start + [int]$area.Rows.Count - 1
                 if ($start -ne $r -or [int]$area.Column -ne $c -or [int]$area.Columns.Count -ne 1 -or $end -gt 98) {
-                    Throw-Text "Unsupported SportyNet merge at $($area.Address())." "Combinacion de celdas SportyNet no compatible en $($area.Address())."
+                    Throw-Text "Unsupported SportyNet merge at $($area.Address())." "Combinación de celdas SportyNet no compatible en $($area.Address())."
                 }
             }
             $sourceCell = if ([bool](Get-SportyScalarValue $cell.MergeCells)) { $cell.MergeArea.Cells.Item(1,1) } else { $cell }
@@ -695,7 +708,7 @@ function Set-ThinBorders($range, [switch]$Inside) {
 
 function Format-SportyNetWorksheet($ws, $layout, $xl) {
     if ($layout.IsFormatted) {
-        Show-Text "  [$($ws.Name)] Already formatted - skipping" "  [$($ws.Name)] Ya esta formateada - se omite" DarkGray
+        Show-Text "  [$($ws.Name)] Already formatted - skipping" "  [$($ws.Name)] Ya está formateada - se omite" DarkGray
         return [pscustomobject]@{ Changed=$false; Anomalies=@() }
     }
     try { $timeData = Get-SportyNetTimeData $ws $layout }
@@ -849,7 +862,7 @@ public class GridFormatterWinAPI {
             Start-Sleep -Seconds 3
             $desktop=[System.Windows.Automation.AutomationElement]::RootElement; $prefWin=$null
             foreach ($w in $desktop.FindAll([System.Windows.Automation.TreeScope]::Children,[System.Windows.Automation.Condition]::TrueCondition)) {
-                if ($w.Current.Name -like "*Printing Preferences*" -or $w.Current.Name -like "*Preferencias de impresion*") { $prefWin=$w; break }
+                if ($w.Current.Name -like "*Printing Preferences*" -or $w.Current.Name -like "*Preferencias de impresión*") { $prefWin=$w; break }
             }
             if ($prefWin) {
                 $hwnd=[IntPtr]$prefWin.Current.NativeWindowHandle
@@ -860,18 +873,18 @@ public class GridFormatterWinAPI {
                 [GridFormatterWinAPI]::SetForegroundWindow($hwnd)|Out-Null; Start-Sleep -Milliseconds 200
                 [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
                 $today | Out-File -LiteralPath $colorFlagFile -Encoding utf8
-                Show-Text "Printer set to color. It will not run again today." "Impresora configurada a color. No se repetira hoy." Green
+                Show-Text "Printer set to color. It will not run again today." "Impresora configurada a color. No se repetirá hoy." Green
             } else {
-                Show-Text "Printer window not found - color setup skipped." "No se encontro la ventana de la impresora - se omitio la configuracion de color." DarkYellow
+                Show-Text "Printer window not found - color setup skipped." "No se encontró la ventana de la impresora - se omitió la configuración de color." DarkYellow
             }
         } catch {
-            Show-Text "Printer color setup failed: $($_.Exception.Message)" "Fallo la configuracion de color: $($_.Exception.Message)" DarkYellow
+            Show-Text "Printer color setup failed: $($_.Exception.Message)" "Falló la configuración de color: $($_.Exception.Message)" DarkYellow
         }
     } else {
         Show-Text "Printer already set to color today - skipping." "La impresora ya fue configurada a color hoy - se omite." DarkGray
     }
 } else {
-    Show-Text "Automatic printer color setup is disabled." "La configuracion automatica de color esta desactivada." DarkGray
+    Show-Text "Automatic printer color setup is disabled." "La configuración automática de color está desactivada." DarkGray
 }
 
 
@@ -936,7 +949,7 @@ foreach ($f in $files) {
                 }
                 $probeText = [string]::Join("; ", [string[]]$probeParts)
                 Throw-Text "SportyNet routing matched, but no worksheet has a supported layout. Detected: $probeText" `
-                           "La deteccion SportyNet coincidio, pero ninguna hoja tiene una estructura compatible. Detectado: $probeText"
+                           "La detección SportyNet coincidió, pero ninguna hoja tiene una estructura compatible. Detectado: $probeText"
             }
             $selectedLayouts=Select-ItemsByRule $layouts "SPORTYNET"
             foreach ($layout in $selectedLayouts) {
@@ -1168,7 +1181,7 @@ foreach ($f in $files) {
                                         } catch {}
                                     }
                                 }
-                                Show-Text "  [$($ws.Name)] Title: $catvTitle" "  [$($ws.Name)] Titulo: $catvTitle" Gray
+                                Show-Text "  [$($ws.Name)] Title: $catvTitle" "  [$($ws.Name)] Título: $catvTitle" Gray
 
                                 # STEP 2: CATV - delete only row 1 (the blank row)
                                 # Result: row1=title, row2=header(ET/RD), row3+=data
@@ -1239,7 +1252,7 @@ foreach ($f in $files) {
                                 if ($hRow -gt 0) { break }
                             }
                             if ($hRow -lt 0) {
-                                Show-Text "  [$($ws.Name)] No time header - skipping" "  [$($ws.Name)] No se encontro encabezado de hora - se omite" DarkYellow
+                                Show-Text "  [$($ws.Name)] No time header - skipping" "  [$($ws.Name)] No se encontró encabezado de hora - se omite" DarkYellow
                                 $rptSkipped += "$lbl ($(Get-Text 'no time header' 'sin encabezado de hora'))"; continue
                             }
                             Show-Text "  [$($ws.Name)] Header row: $hRow" "  [$($ws.Name)] Fila de encabezado: $hRow" Gray
@@ -1267,8 +1280,8 @@ foreach ($f in $files) {
                                 }
                             }
                             if ($hFc -lt 0) {
-                                Show-Text "  [$($ws.Name)] Empty header row - skipping" "  [$($ws.Name)] Fila de encabezado vacia - se omite" DarkYellow
-                                $rptSkipped += "$lbl ($(Get-Text 'empty header' 'encabezado vacio'))"; continue
+                                Show-Text "  [$($ws.Name)] Empty header row - skipping" "  [$($ws.Name)] Fila de encabezado vacía - se omite" DarkYellow
+                                $rptSkipped += "$lbl ($(Get-Text 'empty header' 'encabezado vacío'))"; continue
                             }
                             Show-Text "  [$($ws.Name)] Header columns: $(ColLetter $hFc) to $(ColLetter $hLc)" "  [$($ws.Name)] Columnas de encabezado: $(ColLetter $hFc) a $(ColLetter $hLc)" Gray
 
@@ -1290,7 +1303,7 @@ foreach ($f in $files) {
                             } else {
                                 $titleTxt = $f.BaseName
                             }
-                            Show-Text "  [$($ws.Name)] Title: $titleTxt" "  [$($ws.Name)] Titulo: $titleTxt" Gray
+                            Show-Text "  [$($ws.Name)] Title: $titleTxt" "  [$($ws.Name)] Título: $titleTxt" Gray
 
                             # STEP 5 - Delete left TZ column if not ET/UTC
                             $leftVal = CellStr $ws.Cells.Item($hRow, $hFc)
@@ -1401,7 +1414,7 @@ foreach ($f in $files) {
         if ($workbookChanged) {
             try { $wb.Save() }
             catch {
-                Show-Text "  Save failed, retrying..." "  Fallo al guardar, intentando nuevamente..." DarkYellow
+                Show-Text "  Save failed, retrying..." "  Falló al guardar, intentando nuevamente..." DarkYellow
                 Start-Sleep -Milliseconds 1500
                 try { $wb.Save() } catch { Show-Text "  Save error: $($_.Exception.Message)" "  Error al guardar: $($_.Exception.Message)" Red }
             }
