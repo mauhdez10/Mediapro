@@ -36,7 +36,7 @@ $ManagedSettings = [ordered]@{
 
 # Windows PowerShell 5.1's default console codepage (OEM/legacy, e.g. 437) and
 # $OutputEncoding (US-ASCII) cannot represent accented characters -- Spanish
-# text with a, e, i, o, u, n renders as "?" or "" on screen. This affects
+# text with a, e, i, o, u, n renders as "?" or garbage on screen. This affects
 # only what's drawn to the console window; Excel cell data and transcript log
 # files were already correct UTF-8 regardless. Force UTF-8 for both the
 # console codepage and PowerShell's own output encoding before anything else
@@ -45,6 +45,51 @@ try {
     chcp 65001 | Out-Null
     [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
     $OutputEncoding = [System.Text.Encoding]::UTF8
+} catch {}
+
+# chcp alone is not enough: if the console window is still using the legacy
+# "Raster Fonts" bitmap font (a common default), it cannot render Unicode
+# glyphs at all regardless of codepage -- it silently falls back to whatever
+# limited glyph set is baked into that bitmap font, which is why an accented
+# character can render as a completely unrelated letter (e.g. showing "a" as
+# a capital A-breve) even after the codepage fix above. Force a proper
+# TrueType console font so the codepage fix actually has something correct
+# to render with.
+try {
+    if (-not ("GridFormatterConsoleFont" -as [type])) {
+        Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class GridFormatterConsoleFont {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct COORD { public short X; public short Y; }
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct CONSOLE_FONT_INFOEX {
+        public uint cbSize;
+        public uint nFont;
+        public COORD dwFontSize;
+        public int FontFamily;
+        public int FontWeight;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string FaceName;
+    }
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr GetStdHandle(int nStdHandle);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool SetCurrentConsoleFontEx(IntPtr consoleOutput, bool maximumWindow, ref CONSOLE_FONT_INFOEX consoleCurrentFontEx);
+    public static void UseConsolas() {
+        var info = new CONSOLE_FONT_INFOEX();
+        info.cbSize = (uint)Marshal.SizeOf(info);
+        info.dwFontSize = new COORD { X = 0, Y = 16 };
+        info.FontFamily = 54; // FF_MODERN | TMPF_TRUETYPE
+        info.FontWeight = 400;
+        info.FaceName = "Consolas";
+        SetCurrentConsoleFontEx(GetStdHandle(-11), false, ref info);
+    }
+}
+"@
+    }
+    [GridFormatterConsoleFont]::UseConsolas()
 } catch {}
 
 $UTC_OFFSET  = [int]$ManagedSettings.UtcOffset
