@@ -86,9 +86,12 @@ try {
                 if ([Math]::Abs(([double]$sheet.Cells.Item(30,2).Value2) - (6.75/24.0)) -gt 0.0000001) { throw "$name B30 was not normalized to 06:45." }
                 if ([Math]::Abs(([double]$sheet.Cells.Item(30,3).Value2) - (3.75/24.0)) -gt 0.0000001) { throw "$name C30 was not normalized to 03:45 CDMX." }
                 if ($name -eq 'WEEK 30 V2.xlsx') {
+                    # Source column D (4), row 73, span 8 -- shifted to column E (5) by the
+                    # SportyNet CDMX column insert. Confirmed against the live fixture: this
+                    # is the actual location of the internal-blank-line block from ISS-006.
                     $expectedProgram = "AMISTOSO INTERNACIONAL`n2026`nBenfica x Villareal`n17/07 vt"
-                    $actualProgram = [string]$sheet.Cells.Item(73,4).Value2
-                    if ($actualProgram -ne $expectedProgram) { throw "$name D73 internal-blank normalization failed. Actual: $actualProgram" }
+                    $actualProgram = [string]$sheet.Cells.Item(73,5).Value2
+                    if ($actualProgram -ne $expectedProgram) { throw "$name E73 internal-blank normalization failed. Actual: $actualProgram" }
                 }
             } finally { $book.Close($false) }
         }
