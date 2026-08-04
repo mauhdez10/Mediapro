@@ -180,8 +180,12 @@ function Get-UiText([string]$key) {
         OutputLanguage='PowerShell display language'; Offset='UTC/GMT offset'; UtcLabel='UTC/GMT label'
         PrinterEnabled='Enable automatic printer color setup'; PrinterName='Printer name'
         TabsGroup='Worksheets to Format'; TabsInfo='Enter X to format all matching worksheets, or enter a number and choose First/Last.'
-        FixedLayout='Formatting sizes are fixed per grid type and are not editable in this simplified V1 settings screen.'
         GridType='Grid type'; Tabs='Tabs (X or number)'; Position='Position (First/Last)'
+        GeneralTab='General'; LayoutTab='Layout'
+        LayoutInfo='Row height, header row height, and font size apply directly. All values must be positive integers.'
+        LayoutDisclaimer='Column widths apply only to CATV, TVD, and Pasiones US -- Pasiones LATAM and Todo Novelas use fixed column widths internally. REV TV and SportyNet use fixed internal formatting throughout; nothing on this tab affects those two.'
+        LayoutGridType='Grid type'; LayoutFontSize='Font'; LayoutRowHeight='Row height'; LayoutHeaderHeight='Header height'
+        LayoutSmallCol='Small column'; LayoutDefaultCol='Column width'
         Save='Save Settings'; Reset='Reset Defaults'; Restore='Restore Backup'; Close='Close'
         Saved='Settings were saved into FormatGrids.ps1. The formatter remains self-contained.'
         ResetConfirm='Reset the visible settings to their defaults?'; NoBackups='No backups exist yet. A backup is created automatically whenever settings are saved.'
@@ -193,8 +197,12 @@ function Get-UiText([string]$key) {
         OutputLanguage='Idioma mostrado por PowerShell'; Offset='Diferencia UTC/GMT'; UtcLabel='Etiqueta UTC/GMT'
         PrinterEnabled='Activar configuración automática de color'; PrinterName='Nombre de la impresora'
         TabsGroup='Hojas que se Formatearán'; TabsInfo='Escriba X para todas las hojas compatibles, o un número y seleccione First/Last.'
-        FixedLayout='Los tamaños de formato son fijos para cada tipo de grilla y no se editan en esta pantalla simplificada V1.'
         GridType='Tipo de grilla'; Tabs='Hojas (X o número)'; Position='Posición (First/Last)'
+        GeneralTab='General'; LayoutTab='Diseño'
+        LayoutInfo='La altura de fila, la altura del encabezado y el tamaño de fuente se aplican directamente. Todos los valores deben ser enteros positivos.'
+        LayoutDisclaimer='El ancho de columna solo se aplica a CATV, TVD y Pasiones US -- Pasiones LATAM y Todo Novelas usan anchos de columna fijos internamente. REV TV y SportyNet usan un formato interno fijo en todo; nada en esta pestaña afecta a esos dos.'
+        LayoutGridType='Tipo de grilla'; LayoutFontSize='Fuente'; LayoutRowHeight='Alto de fila'; LayoutHeaderHeight='Alto de encabezado'
+        LayoutSmallCol='Columna pequeña'; LayoutDefaultCol='Ancho de columna'
         Save='Guardar Configuración'; Reset='Restablecer Valores'; Restore='Restaurar Respaldo'; Close='Cerrar'
         Saved='La configuración se guardó dentro de FormatGrids.ps1. El formateador continúa siendo independiente.'
         ResetConfirm='¿Restablecer la configuración visible a sus valores predeterminados?'; NoBackups='Todavía no existen respaldos. Se crea uno automáticamente cada vez que se guarda.'
@@ -250,16 +258,23 @@ function Get-CurrentFormData {
         utcLabel=$script:Ui.UtcLabel.Text.Trim()
         printerColorEnabled=[bool]$script:Ui.PrinterEnabled.Checked
         printerName=$script:Ui.PrinterName.Text.Trim()
-        tabs=[ordered]@{}
-        # Layout values remain preserved for backward compatibility, but the
-        # simplified V1 UI no longer exposes misleading generic dimensions.
-        layout=$script:data.layout
+        tabs=[ordered]@{}; layout=[ordered]@{}
     }
     foreach ($row in $script:Ui.Grid.Rows) {
         $name=[string]$row.Tag
         $new.tabs[$name]=[ordered]@{
             tabs=([string]$row.Cells['Tabs'].Value).Trim()
             position=[string]$row.Cells['Position'].Value
+        }
+    }
+    foreach ($row in $script:Ui.LayoutGrid.Rows) {
+        $name=[string]$row.Tag
+        $new.layout[$name]=[ordered]@{
+            fontSize=([string]$row.Cells['FontSize'].Value).Trim()
+            defaultRowHeight=([string]$row.Cells['RowHeight'].Value).Trim()
+            headerRowHeight=([string]$row.Cells['HeaderHeight'].Value).Trim()
+            smallColumnWidth=([string]$row.Cells['SmallCol'].Value).Trim()
+            defaultColumnWidth=([string]$row.Cells['DefaultCol'].Value).Trim()
         }
     }
     return [pscustomobject]$new
@@ -276,6 +291,14 @@ function Refresh-FormFromData($d) {
         $row.Cells['Tabs'].Value=[string]$d.tabs.$name.tabs
         $row.Cells['Position'].Value=[string]$d.tabs.$name.position
     }
+    foreach ($row in $script:Ui.LayoutGrid.Rows) {
+        $name=[string]$row.Tag
+        $row.Cells['FontSize'].Value=[string]$d.layout.$name.fontSize
+        $row.Cells['RowHeight'].Value=[string]$d.layout.$name.defaultRowHeight
+        $row.Cells['HeaderHeight'].Value=[string]$d.layout.$name.headerRowHeight
+        $row.Cells['SmallCol'].Value=[string]$d.layout.$name.smallColumnWidth
+        $row.Cells['DefaultCol'].Value=[string]$d.layout.$name.defaultColumnWidth
+    }
 }
 
 function Apply-UiLanguage {
@@ -289,30 +312,61 @@ function Apply-UiLanguage {
     $script:Ui.LabelPrinter.Text=Get-UiText 'PrinterName'
     $script:Ui.TabsGroup.Text=Get-UiText 'TabsGroup'
     $script:Ui.TabsInfo.Text=Get-UiText 'TabsInfo'
-    $script:Ui.FixedLayout.Text=Get-UiText 'FixedLayout'
     $script:Ui.Grid.Columns['GridType'].HeaderText=Get-UiText 'GridType'
     $script:Ui.Grid.Columns['Tabs'].HeaderText=Get-UiText 'Tabs'
     $script:Ui.Grid.Columns['Position'].HeaderText=Get-UiText 'Position'
+    $script:Ui.GeneralTabPage.Text=Get-UiText 'GeneralTab'
+    $script:Ui.LayoutTabPage.Text=Get-UiText 'LayoutTab'
+    $script:Ui.LayoutInfo.Text=Get-UiText 'LayoutInfo'
+    $script:Ui.LayoutDisclaimer.Text=Get-UiText 'LayoutDisclaimer'
+    $script:Ui.LayoutGrid.Columns['GridType'].HeaderText=Get-UiText 'LayoutGridType'
+    $script:Ui.LayoutGrid.Columns['FontSize'].HeaderText=Get-UiText 'LayoutFontSize'
+    $script:Ui.LayoutGrid.Columns['RowHeight'].HeaderText=Get-UiText 'LayoutRowHeight'
+    $script:Ui.LayoutGrid.Columns['HeaderHeight'].HeaderText=Get-UiText 'LayoutHeaderHeight'
+    $script:Ui.LayoutGrid.Columns['SmallCol'].HeaderText=Get-UiText 'LayoutSmallCol'
+    $script:Ui.LayoutGrid.Columns['DefaultCol'].HeaderText=Get-UiText 'LayoutDefaultCol'
     $script:Ui.Save.Text=Get-UiText 'Save'
     $script:Ui.Reset.Text=Get-UiText 'Reset'
     $script:Ui.Restore.Text=Get-UiText 'Restore'
     $script:Ui.Close.Text=Get-UiText 'Close'
 }
 
+function New-StyledGrid($form, $accent) {
+    $g=New-Object Windows.Forms.DataGridView
+    $g.AllowUserToAddRows=$false; $g.AllowUserToDeleteRows=$false; $g.RowHeadersVisible=$false
+    $g.AutoSizeColumnsMode='None'; $g.SelectionMode='CellSelect'; $g.MultiSelect=$false
+    $g.RowTemplate.Height=28
+    $g.BackgroundColor=[Drawing.Color]::White
+    $g.BorderStyle='None'; $g.CellBorderStyle='SingleHorizontal'; $g.ColumnHeadersBorderStyle='None'
+    $g.ColumnHeadersHeightSizeMode='DisableResizing'; $g.ColumnHeadersHeight=32
+    $g.ColumnHeadersDefaultCellStyle.BackColor=[Drawing.Color]::FromArgb(230,232,236)
+    $g.ColumnHeadersDefaultCellStyle.Font=New-Object Drawing.Font($form.Font,[Drawing.FontStyle]::Bold)
+    $g.EnableHeadersVisualStyles=$false
+    $g.DefaultCellStyle.SelectionBackColor=$accent; $g.DefaultCellStyle.SelectionForeColor=[Drawing.Color]::White
+    $g.AlternatingRowsDefaultCellStyle.BackColor=[Drawing.Color]::FromArgb(247,247,249)
+    return $g
+}
+
 function Start-SettingsUi {
     $script:data=Load-Settings
     $form=New-Object Windows.Forms.Form
-    $form.Size=New-Object Drawing.Size(880,650); $form.StartPosition='CenterScreen'
+    $form.Size=New-Object Drawing.Size(880,700); $form.StartPosition='CenterScreen'
     $form.FormBorderStyle='FixedDialog'; $form.MaximizeBox=$false; $form.MinimizeBox=$true
     $form.Font=New-Object Drawing.Font('Segoe UI',9)
     $form.BackColor=[Drawing.Color]::FromArgb(245,246,248)
 
     $accent=[Drawing.Color]::FromArgb(0,120,80)
+    $display=[ordered]@{CATV='CATV';TVD='TVD';PASIONES_LATAM='Pasiones LATAM';PASIONES_US='Pasiones US';TODO_NOVELAS='Todo Novelas';REV_TV='REV TV';SPORTYNET='SportyNet'}
 
     $switch=New-Object Windows.Forms.Button; $switch.Location='735,15'; $switch.Size='105,34'
     $switch.FlatStyle='Flat'; $switch.FlatAppearance.BorderColor=$accent; $switch.ForeColor=$accent; $switch.BackColor=[Drawing.Color]::White
 
-    $general=New-Object Windows.Forms.GroupBox; $general.Location='20,55'; $general.Size='820,145'
+    $tabControl=New-Object Windows.Forms.TabControl; $tabControl.Location='20,55'; $tabControl.Size='820,540'
+    $tabGeneral=New-Object Windows.Forms.TabPage; $tabControl.TabPages.Add($tabGeneral)
+    $tabLayout=New-Object Windows.Forms.TabPage; $tabControl.TabPages.Add($tabLayout)
+
+    # ===== General tab =====
+    $general=New-Object Windows.Forms.GroupBox; $general.Location='15,10'; $general.Size='790,145'
     $labelLang=New-Object Windows.Forms.Label; $labelLang.Location='20,33'; $labelLang.Size='210,24'
     $comboLang=New-Object Windows.Forms.ComboBox; $comboLang.Location='245,29'; $comboLang.Size='150,28'; $comboLang.DropDownStyle='DropDownList'
     [void]$comboLang.Items.Add('English'); [void]$comboLang.Items.Add('Spanish')
@@ -322,45 +376,55 @@ function Start-SettingsUi {
     $textUtc=New-Object Windows.Forms.TextBox; $textUtc.Location='245,72'; $textUtc.Size='150,27'
     $checkPrinter=New-Object Windows.Forms.CheckBox; $checkPrinter.Location='430,75'; $checkPrinter.Size='360,25'
     $labelPrinter=New-Object Windows.Forms.Label; $labelPrinter.Location='20,110'; $labelPrinter.Size='210,24'
-    $textPrinter=New-Object Windows.Forms.TextBox; $textPrinter.Location='245,106'; $textPrinter.Size='545,27'
+    $textPrinter=New-Object Windows.Forms.TextBox; $textPrinter.Location='245,106'; $textPrinter.Size='515,27'
     foreach ($control in @($labelLang,$comboLang,$labelOffset,$numOffset,$labelUtc,$textUtc,$checkPrinter,$labelPrinter,$textPrinter)) { $general.Controls.Add($control) }
 
-    $tabsGroup=New-Object Windows.Forms.GroupBox; $tabsGroup.Location='20,210'; $tabsGroup.Size='820,315'
-    $info=New-Object Windows.Forms.Label; $info.Location='20,28'; $info.Size='775,38'
-    $grid=New-Object Windows.Forms.DataGridView; $grid.Location='20,70'; $grid.Size='775,205'
-    $grid.AllowUserToAddRows=$false; $grid.AllowUserToDeleteRows=$false; $grid.RowHeadersVisible=$false
-    $grid.AutoSizeColumnsMode='None'; $grid.SelectionMode='CellSelect'; $grid.MultiSelect=$false
-    $grid.RowTemplate.Height=28
-    $grid.BackgroundColor=[Drawing.Color]::White
-    $grid.BorderStyle='None'; $grid.CellBorderStyle='SingleHorizontal'; $grid.ColumnHeadersBorderStyle='None'
-    $grid.ColumnHeadersHeightSizeMode='DisableResizing'; $grid.ColumnHeadersHeight=32
-    $grid.ColumnHeadersDefaultCellStyle.BackColor=[Drawing.Color]::FromArgb(230,232,236)
-    $grid.ColumnHeadersDefaultCellStyle.Font=New-Object Drawing.Font($form.Font,[Drawing.FontStyle]::Bold)
-    $grid.EnableHeadersVisualStyles=$false
-    $grid.DefaultCellStyle.SelectionBackColor=$accent; $grid.DefaultCellStyle.SelectionForeColor=[Drawing.Color]::White
-    $grid.AlternatingRowsDefaultCellStyle.BackColor=[Drawing.Color]::FromArgb(247,247,249)
-    $c1=New-Object Windows.Forms.DataGridViewTextBoxColumn; $c1.Name='GridType'; $c1.ReadOnly=$true; $c1.Width=300
-    $c2=New-Object Windows.Forms.DataGridViewTextBoxColumn; $c2.Name='Tabs'; $c2.Width=190
-    $c3=New-Object Windows.Forms.DataGridViewComboBoxColumn; $c3.Name='Position'; $c3.Width=240
+    $tabsGroup=New-Object Windows.Forms.GroupBox; $tabsGroup.Location='15,165'; $tabsGroup.Size='790,340'
+    $info=New-Object Windows.Forms.Label; $info.Location='20,28'; $info.Size='745,38'
+    $grid=New-StyledGrid $form $accent
+    $grid.Location='20,70'; $grid.Size='745,240'
+    $c1=New-Object Windows.Forms.DataGridViewTextBoxColumn; $c1.Name='GridType'; $c1.ReadOnly=$true; $c1.Width=270
+    $c2=New-Object Windows.Forms.DataGridViewTextBoxColumn; $c2.Name='Tabs'; $c2.Width=180
+    $c3=New-Object Windows.Forms.DataGridViewComboBoxColumn; $c3.Name='Position'; $c3.Width=230
     [void]$c3.Items.Add('First'); [void]$c3.Items.Add('Last')
     $null=$grid.Columns.Add($c1); $null=$grid.Columns.Add($c2); $null=$grid.Columns.Add($c3)
-    $display=[ordered]@{CATV='CATV';TVD='TVD';PASIONES_LATAM='Pasiones LATAM';PASIONES_US='Pasiones US';TODO_NOVELAS='Todo Novelas';REV_TV='REV TV';SPORTYNET='SportyNet'}
     foreach ($name in $display.Keys) {
         $idx=$grid.Rows.Add($display[$name],[string]$script:data.tabs.$name.tabs,[string]$script:data.tabs.$name.position)
         if ($idx -lt 0) { throw "Could not create settings row for $name." }
         $grid.Rows[$idx].Tag=$name
     }
-    $fixedLayout=New-Object Windows.Forms.Label; $fixedLayout.Location='20,282'; $fixedLayout.Size='775,26'; $fixedLayout.ForeColor=[Drawing.Color]::DimGray
-    $tabsGroup.Controls.Add($info); $tabsGroup.Controls.Add($grid); $tabsGroup.Controls.Add($fixedLayout)
+    $tabsGroup.Controls.Add($info); $tabsGroup.Controls.Add($grid)
+    $tabGeneral.Controls.Add($general); $tabGeneral.Controls.Add($tabsGroup)
 
-    $save=New-Object Windows.Forms.Button; $save.Location='20,545'; $save.Size='185,42'
+    # ===== Layout tab =====
+    $layoutInfo=New-Object Windows.Forms.Label; $layoutInfo.Location='15,15'; $layoutInfo.Size='790,32'
+    $layoutGrid=New-StyledGrid $form $accent
+    $layoutGrid.Location='15,55'; $layoutGrid.Size='790,400'
+    $lg1=New-Object Windows.Forms.DataGridViewTextBoxColumn; $lg1.Name='GridType'; $lg1.ReadOnly=$true; $lg1.Width=185
+    $lg2=New-Object Windows.Forms.DataGridViewTextBoxColumn; $lg2.Name='FontSize'; $lg2.Width=100
+    $lg3=New-Object Windows.Forms.DataGridViewTextBoxColumn; $lg3.Name='RowHeight'; $lg3.Width=115
+    $lg4=New-Object Windows.Forms.DataGridViewTextBoxColumn; $lg4.Name='HeaderHeight'; $lg4.Width=130
+    $lg5=New-Object Windows.Forms.DataGridViewTextBoxColumn; $lg5.Name='SmallCol'; $lg5.Width=130
+    $lg6=New-Object Windows.Forms.DataGridViewTextBoxColumn; $lg6.Name='DefaultCol'; $lg6.Width=125
+    $null=$layoutGrid.Columns.Add($lg1); $null=$layoutGrid.Columns.Add($lg2); $null=$layoutGrid.Columns.Add($lg3)
+    $null=$layoutGrid.Columns.Add($lg4); $null=$layoutGrid.Columns.Add($lg5); $null=$layoutGrid.Columns.Add($lg6)
+    foreach ($name in $display.Keys) {
+        $entry=$script:data.layout.$name
+        $idx=$layoutGrid.Rows.Add($display[$name],$entry.fontSize,$entry.defaultRowHeight,$entry.headerRowHeight,$entry.smallColumnWidth,$entry.defaultColumnWidth)
+        if ($idx -lt 0) { throw "Could not create layout row for $name." }
+        $layoutGrid.Rows[$idx].Tag=$name
+    }
+    $layoutDisclaimer=New-Object Windows.Forms.Label; $layoutDisclaimer.Location='15,460'; $layoutDisclaimer.Size='790,60'; $layoutDisclaimer.ForeColor=[Drawing.Color]::DimGray
+    $tabLayout.Controls.Add($layoutInfo); $tabLayout.Controls.Add($layoutGrid); $tabLayout.Controls.Add($layoutDisclaimer)
+
+    $save=New-Object Windows.Forms.Button; $save.Location='20,615'; $save.Size='185,42'
     $save.FlatStyle='Flat'; $save.BackColor=$accent; $save.ForeColor=[Drawing.Color]::White
     $save.Font=New-Object Drawing.Font($form.Font,[Drawing.FontStyle]::Bold)
-    $reset=New-Object Windows.Forms.Button; $reset.Location='220,545'; $reset.Size='185,42'
-    $restore=New-Object Windows.Forms.Button; $restore.Location='420,545'; $restore.Size='185,42'
-    $close=New-Object Windows.Forms.Button; $close.Location='620,545'; $close.Size='220,42'
+    $reset=New-Object Windows.Forms.Button; $reset.Location='220,615'; $reset.Size='185,42'
+    $restore=New-Object Windows.Forms.Button; $restore.Location='420,615'; $restore.Size='185,42'
+    $close=New-Object Windows.Forms.Button; $close.Location='620,615'; $close.Size='220,42'
 
-    $form.Controls.Add($switch); $form.Controls.Add($general); $form.Controls.Add($tabsGroup)
+    $form.Controls.Add($switch); $form.Controls.Add($tabControl)
     $form.Controls.Add($save); $form.Controls.Add($reset); $form.Controls.Add($restore); $form.Controls.Add($close)
     $form.AcceptButton=$save; $form.CancelButton=$close
 
@@ -368,7 +432,9 @@ function Start-SettingsUi {
         Form=$form; LanguageSwitch=$switch; GeneralGroup=$general; LabelLanguage=$labelLang
         ComboLanguage=$comboLang; LabelOffset=$labelOffset; Offset=$numOffset; LabelUtc=$labelUtc
         UtcLabel=$textUtc; PrinterEnabled=$checkPrinter; LabelPrinter=$labelPrinter; PrinterName=$textPrinter
-        TabsGroup=$tabsGroup; TabsInfo=$info; Grid=$grid; FixedLayout=$fixedLayout
+        TabsGroup=$tabsGroup; TabsInfo=$info; Grid=$grid
+        GeneralTabPage=$tabGeneral; LayoutTabPage=$tabLayout
+        LayoutInfo=$layoutInfo; LayoutGrid=$layoutGrid; LayoutDisclaimer=$layoutDisclaimer
         Save=$save; Reset=$reset; Restore=$restore; Close=$close
     }
     Refresh-FormFromData $script:data
@@ -409,13 +475,17 @@ function Start-SettingsUi {
     $close.Add_Click({ $form.Close() })
 
     if ($env:GRID_SETTINGS_UI_SELFTEST -eq '1') {
-        if ($grid.Columns.Count -ne 3) { throw "Settings UI expected 3 columns, found $($grid.Columns.Count)." }
-        if ($grid.Rows.Count -ne 7) { throw "Settings UI expected 7 grid rows, found $($grid.Rows.Count)." }
+        if ($grid.Columns.Count -ne 3) { throw "Settings UI expected 3 tabs-grid columns, found $($grid.Columns.Count)." }
+        if ($grid.Rows.Count -ne 7) { throw "Settings UI expected 7 tabs-grid rows, found $($grid.Rows.Count)." }
+        if ($layoutGrid.Columns.Count -ne 6) { throw "Settings UI expected 6 layout-grid columns, found $($layoutGrid.Columns.Count)." }
+        if ($layoutGrid.Rows.Count -ne 7) { throw "Settings UI expected 7 layout-grid rows, found $($layoutGrid.Rows.Count)." }
         if ($save.Text -ne 'Save Settings' -or $reset.Text -ne 'Reset Defaults' -or $restore.Text -ne 'Restore Backup' -or $close.Text -ne 'Close') {
             throw 'Settings UI did not start with English action buttons.'
         }
+        if ($tabGeneral.Text -ne 'General' -or $tabLayout.Text -ne 'Layout') { throw 'Settings UI did not start with English tab titles.' }
         $script:UiLanguage='Spanish'; Apply-UiLanguage
         if ($save.Text -ne 'Guardar Configuración' -or $close.Text -ne 'Cerrar') { throw 'Settings UI Spanish switch failed.' }
+        if ($tabLayout.Text -ne 'Diseño') { throw 'Settings UI Spanish tab switch failed.' }
         $script:UiLanguage='English'; Apply-UiLanguage
         Write-Output 'SETTINGS_UI_SELFTEST_PASS'
         return
