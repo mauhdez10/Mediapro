@@ -1,2 +1,3 @@
 @echo off
-"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "%~dp0Settings UI.ps1"
+start "" wscript.exe "%~dp0Open Settings.vbs"
+exit /b 0

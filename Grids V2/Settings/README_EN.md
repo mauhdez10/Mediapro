@@ -1,10 +1,21 @@
-# Grid Formatter V2 Settings
+# Grids V2 Settings
 
-1. Double-click **Open Settings.bat**.
-2. Change language, UTC/GMT offset and label, printer color setup, or tab selection.
-3. Use **X** to format all eligible tabs, or enter a number and choose First/Last.
-4. Click **Save Settings**.
+Double-click `Open Settings.bat` to open the Settings window without leaving a PowerShell console visible.
 
-Saving updates only the protected settings block in `../FormatGrids.ps1`. The formatter never reads `settings.json` while processing grids. Deleting the entire Settings folder does not stop the active formatter.
+The Settings UI changes only:
 
-`printer_color_set.txt` stores only the last day the color setup ran. Operator packages without Settings use a local Windows state file automatically.
+- PowerShell display language: English or Spanish
+- UTC/GMT offset and label
+- Automatic printer color setup and printer name
+- How many matching worksheets each grid type formats: `X` for all, or a number using First/Last
+
+Formatting dimensions are fixed inside each grid formatter and are intentionally not editable in this simplified V1 interface.
+
+When you click **Save Settings**, the UI:
+
+1. Creates a backup of `FormatGrids.ps1`.
+2. Replaces only the protected managed-settings block.
+3. validates the updated PowerShell script.
+4. Activates it only if validation succeeds.
+
+`FormatGrids.ps1` does not read `settings.json` during normal formatting. Removing the entire Settings folder does not prevent the formatter from running.

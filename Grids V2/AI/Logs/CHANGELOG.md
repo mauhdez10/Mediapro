@@ -31,3 +31,14 @@
 - Added time-stage and program-stage error prefixes.
 - Added header probes to strict-layout failures.
 - Updated exact-file regression tests and distribution packages.
+
+## 2.0.4-dev — WEEK 30 text handling and simplified Settings UI
+
+- Corrected SportyNet program-text handling for real cells that use an internal blank physical line as the target of the manual "move line up" operation.
+- Added deterministic blank-safe fragment joining and a functions-only test mode.
+- Added the exact `WEEK 30 V2.xlsx` / `Sheet1!D73` regression case to Windows smoke testing.
+- Simplified Settings to the requested runtime controls only: display language, UTC/GMT, printer color/name, and worksheet count/position.
+- Removed the misleading editable Layout tab; formatting dimensions remain fixed inside each grid formatter.
+- Reorganized Save, Reset, Restore, and Close into one consistent action row.
+- Settings opens in English and includes an `Español`/`English` UI-language switch.
+- Added a hidden VBS launcher so opening Settings does not leave a PowerShell console on screen.

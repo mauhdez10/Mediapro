@@ -1,43 +1,39 @@
-# Grids V2 Static Validation — 2.0.2-dev
+# Grids V2 Static Validation — 2.0.4-dev
 
-- Passed: **31**
+- Passed: **24**
 - Failed: **0**
-- Active script SHA-256: `1c081e1ffc7147cbbb607b931b7fdacef2a4241dd92b1797b29d83f181a9c1b3`
+- Script SHA-256: `b3943717cdbfbf07966c112a79926485fc2c04924e8775d4d428de3a447b360c`
 
 ## Checks
 
-- **PASS** — Managed version is 2.0.2-dev
-- **PASS** — Scalar unwrapping helper exists
-- **PASS** — Safe string helper exists
-- **PASS** — Sporty time extraction does not use Range.Text
-- **PASS** — Sporty program extraction avoids direct Value2 string cast
-- **PASS** — Merged program cells use top-left scalar
-- **PASS** — Worksheet names use safe conversion
-- **PASS** — Source variant uses safe conversion
-- **PASS** — Time-stage diagnostic exists
-- **PASS** — Program-stage diagnostic exists
-- **PASS** — Strict-layout header probe exists
-- **PASS** — Runtime and AI source match
-- **PASS** — Settings UI copies match
-- **PASS** — Runtime has no Excel Calculation assignment
+- **PASS** — Version is 2.0.4-dev
+- **PASS** — Program text no longer rejects internal blanks
+- **PASS** — Blank-safe fragment join helper exists
+- **PASS** — Program transform applies end-stable two joins
+- **PASS** — Functions-only test mode exists
+- **PASS** — No Calculation assignment
 - **PASS** — No PDF export
-- **PASS** — No page-break automation
-- **PASS** — Fixture exists: SNETL - Week 31.xlsx — /mnt/data/gv2_fix_py/Grids V2/AI/References/SportyNet/SNETL - Week 31.xlsx
-- **PASS** — Header layout supported: SNETL - Week 31.xlsx — ['GMT', 'BRT', 'BRT', 'GMT']
-- **PASS** — Seven dates present: SNETL - Week 31.xlsx
-- **PASS** — Legend present: SNETL - Week 31.xlsx
-- **PASS** — Fixture exists: WEEK 31 V.4 1.xlsx — /mnt/data/gv2_fix_py/Grids V2/AI/References/SportyNet/WEEK 31 V.4 1.xlsx
-- **PASS** — Header layout supported: WEEK 31 V.4 1.xlsx — ['GMT', 'Mex', 'BRT', 'GMT']
-- **PASS** — Seven dates present: WEEK 31 V.4 1.xlsx
-- **PASS** — Legend present: WEEK 31 V.4 1.xlsx
-- **PASS** — Fixture exists: Week 32.xlsx — /mnt/data/gv2_fix_py/Grids V2/AI/References/SportyNet/Week 32.xlsx
-- **PASS** — Header layout supported: Week 32.xlsx — ['GMT', 'BRT', 'BRT', 'GMT']
-- **PASS** — Seven dates present: Week 32.xlsx
-- **PASS** — Legend present: Week 32.xlsx
-- **PASS** — PowerShell delimiter balance () — 872 vs 872
-- **PASS** — PowerShell delimiter balance {} — 506 vs 506
-- **PASS** — PowerShell delimiter balance [] — 293 vs 293
+- **PASS** — UI starts with English buttons
+- **PASS** — UI has English-Spanish switch
+- **PASS** — Misleading layout tab removed
+- **PASS** — UI explains fixed per-grid formatting
+- **PASS** — UI adds columns individually
+- **PASS** — UI self-test exists
+- **PASS** — Hidden VBS launcher exists
+- **PASS** — BAT delegates to hidden VBS
+- **PASS** — VBS hides PowerShell window
+- **PASS** — Smoke test includes WEEK 30 fixture
+- **PASS** — Smoke test verifies D73 text
+- **PASS** — Smoke test runs Settings UI self-test
+- **PASS** — WEEK 30 D73 fixture contains internal blank — 'AMISTOSO INTERNACIONAL\n2026\n\nBenfica x Villareal\n17/07\nvt\n'
+- **PASS** — WEEK 30 D73 is merged D73:D80
+- **PASS** — WEEK 30 D73 transforms deterministically — AMISTOSO INTERNACIONAL
+2026
+Benfica x Villareal
+17/07 vt
+- **PASS** — FormatGrids delimiter balance
+- **PASS** — Settings UI delimiter balance
 
 ## Runtime limitation
 
-Desktop Excel COM unavailable; Windows rerun required.
+Desktop Windows Excel COM and WinForms are unavailable in this environment; rerun Windows smoke tests.

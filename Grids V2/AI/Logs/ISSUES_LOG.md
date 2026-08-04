@@ -51,3 +51,22 @@ Status: code and static fixture validation complete; Windows rerun remains requi
 - **Status:** fixed in 2.0.2-dev; pending Windows rerun
 - **Evidence:** `SNETL - Week 31.xlsx` and `Week 32.xlsx` reached the formatter but failed with `Unable to cast object of type System.Object[] to type System.String`.
 - **Correction:** all SportyNet COM reads now pass through scalar-unwrapping helpers; direct string casts and `Range.Text` reads were removed from the affected path.
+
+## ISS-006 — WEEK 30 internal blank program line
+
+- **Status:** fixed in code in 2.0.4-dev; pending Windows Excel rerun.
+- **Evidence:** `WEEK 30 V2.xlsx`, `Sheet1!D73`, merge `D73:D80` contains `AMISTOSO INTERNACIONAL / 2026 / [blank] / Benfica x Villareal / 17/07 / vt`.
+- **Previous behavior:** the formatter stopped at the program stage because the earlier plan treated every internal blank physical line as invalid.
+- **Correction:** preserve physical positions while applying the two manual end-based joins; a blank join target consumes the next meaningful fragment without adding a leading separator. Remaining blank placeholders are removed afterward.
+- **Expected output:** `AMISTOSO INTERNACIONAL`, `2026`, `Benfica x Villareal`, `17/07 vt` on four lines.
+
+## ISS-007 — Settings layout controls were misleading
+
+- **Status:** resolved in the 2.0.4-dev UI; Windows UI confirmation pending.
+- **Evidence:** the Layout tab displayed the same generic values for every grid even though Pasiones/Todo and SportyNet use format-specific overrides.
+- **Correction:** remove the Layout tab from the simplified V1 manager UI. Formatting dimensions remain implementation-owned and fixed per grid type.
+
+## ISS-008 — Settings launcher leaves a PowerShell console visible
+
+- **Status:** fixed in code in 2.0.4-dev; Windows confirmation pending.
+- **Correction:** `Open Settings.bat` delegates to `Open Settings.vbs`, which launches Windows PowerShell with a hidden window. Startup errors are logged and displayed through a message box.

@@ -1,4 +1,4 @@
-﻿# ===========================================================
+# ===========================================================
 #  GRID FORMATTER V2 - FormatGrids.ps1
 # ===========================================================
 #  Runtime is self-contained. The Settings UI only rewrites the
@@ -7,7 +7,7 @@
 
 # >>> BEGIN MANAGED SETTINGS >>>
 $ManagedSettings = [ordered]@{
-    Version             = "2.0.3-dev"
+    Version             = "2.0.4-dev"
     Language            = "English"
     UtcOffset           = -4
     UtcLabel            = "UTC"
@@ -595,28 +595,60 @@ function Get-SportyNetTimeData($ws, $layout) {
     }
 }
 
+function Join-SportyProgramFragments([string]$left, [string]$right) {
+    # The client occasionally supplies a physical blank line as the target of
+    # the manual "move the next line up" operation. In that case the nonblank
+    # fragment wins without adding a leading/trailing separator. When both
+    # fragments contain text, preserve their original whitespace and insert
+    # exactly one literal separator, matching the established manual rule.
+    if ([string]::IsNullOrWhiteSpace($left)) { return $right }
+    if ([string]::IsNullOrWhiteSpace($right)) { return $left }
+    return $left + " " + $right
+}
+
 function Convert-SportyNetProgramText([string]$text, [int]$span, [string]$address) {
     if ($null -eq $text) { $text = "" }
     $normalized = $text.Replace("`r`n","`n").Replace("`r","`n")
     $parts = [System.Collections.Generic.List[string]]::new()
     foreach ($part in $normalized.Split([char]10)) { [void]$parts.Add([string]$part) }
-    while ($parts.Count -gt 0 -and $parts[$parts.Count-1] -eq "") { $parts.RemoveAt($parts.Count-1) }
-    for ($i = 0; $i -lt $parts.Count; $i++) {
-        if ([string]::IsNullOrWhiteSpace($parts[$i])) {
-            Throw-Text "${address}: internal blank program line at line $($i+1)." "${address}: linea interna vacia en el programa, linea $($i+1)."
-        }
+
+    # Trailing line feeds are source noise and never create visible output.
+    while ($parts.Count -gt 0 -and [string]::IsNullOrEmpty($parts[$parts.Count-1])) {
+        $parts.RemoveAt($parts.Count-1)
     }
-    $n = $parts.Count
-    if ($n -eq 0) { return "" }
-    if ($span -eq 1) { return [string]::Join(" ",$parts.ToArray()) }
-    if ($n -eq 1) { return $parts[0] }
-    if ($n -eq 2) { return $parts[0] + " " + $parts[1] }
-    if ($n -eq 3) { return $parts[0] + "`n" + $parts[1] + " " + $parts[2] }
-    $out = [System.Collections.Generic.List[string]]::new()
-    for ($i = 0; $i -le ($n-5); $i++) { [void]$out.Add($parts[$i]) }
-    [void]$out.Add($parts[$n-4] + " " + $parts[$n-3])
-    [void]$out.Add($parts[$n-2] + " " + $parts[$n-1])
-    return [string]::Join("`n",$out.ToArray())
+
+    if ($parts.Count -eq 0) { return "" }
+
+    if ($span -eq 1) {
+        # One-row cells become one physical line. Ignore blank placeholder lines
+        # but preserve all whitespace inside meaningful source fragments.
+        $singleLine = [System.Collections.Generic.List[string]]::new()
+        foreach ($part in $parts) {
+            if (-not [string]::IsNullOrWhiteSpace($part)) { [void]$singleLine.Add($part) }
+        }
+        return [string]::Join(" ",$singleLine.ToArray())
+    }
+
+    # Apply the two manual moves from the end so indexes remain stable:
+    #   1) move the original last line into the previous line;
+    #   2) move the original third-to-last line into its previous line.
+    # An internal blank placeholder is valid and is consumed by the join helper.
+    $originalCount = $parts.Count
+    if ($originalCount -ge 2) {
+        $parts[$originalCount-2] = Join-SportyProgramFragments $parts[$originalCount-2] $parts[$originalCount-1]
+        $parts.RemoveAt($originalCount-1)
+    }
+    if ($originalCount -ge 4) {
+        $parts[$originalCount-4] = Join-SportyProgramFragments $parts[$originalCount-4] $parts[$originalCount-3]
+        $parts.RemoveAt($originalCount-3)
+    }
+
+    # Remove any blank placeholder that was not one of the two join targets.
+    $output = [System.Collections.Generic.List[string]]::new()
+    foreach ($part in $parts) {
+        if (-not [string]::IsNullOrWhiteSpace($part)) { [void]$output.Add($part) }
+    }
+    return [string]::Join("`n",$output.ToArray())
 }
 
 function Get-SportyNetProgramData($ws, $layout) {
@@ -763,6 +795,9 @@ function Format-SportyNetWorksheet($ws, $layout, $xl) {
     return [pscustomobject]@{ Changed=$true; Anomalies=$timeData.Anomalies }
 }
 
+
+# Unit/regression tests may load the formatter functions without launching Excel.
+if ($env:GRID_FORMATTER_FUNCTIONS_ONLY -eq "1") { return }
 
 # -----------------------------------------------------------
 # Optional project run log. The formatter works normally without AI.

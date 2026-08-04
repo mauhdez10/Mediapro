@@ -1,10 +1,21 @@
-# Configuracion del Formateador de Grillas V2
+# Configuración de Grids V2
 
-1. Haga doble clic en **Open Settings.bat**.
-2. Cambie el idioma, la diferencia UTC/GMT, el nombre mostrado, la configuracion de color o la seleccion de pestanas.
-3. Use **X** para procesar todas las pestanas elegibles, o escriba un numero y elija First/Last.
-4. Presione **Save Settings**.
+Haga doble clic en `Open Settings.bat` para abrir la configuración sin dejar una ventana de PowerShell visible.
 
-Al guardar, solo se actualiza el bloque protegido dentro de `../FormatGrids.ps1`. El formateador no lee `settings.json` al procesar grillas. Si se elimina toda la carpeta Settings, el script activo continua funcionando.
+La interfaz solo modifica:
 
-`printer_color_set.txt` solo guarda el ultimo dia en que se configuro el color. Los paquetes de operador sin Settings usan automaticamente un archivo de estado local de Windows.
+- Idioma mostrado por PowerShell: inglés o español
+- Diferencia y etiqueta UTC/GMT
+- Configuración automática de color y nombre de la impresora
+- Cuántas hojas compatibles formatea cada tipo de grilla: `X` para todas, o un número usando First/Last
+
+Los tamaños de formato son fijos dentro del formateador de cada tipo de grilla y no se editan en esta interfaz V1 simplificada.
+
+Al pulsar **Guardar Configuración**, la interfaz:
+
+1. Crea un respaldo de `FormatGrids.ps1`.
+2. Reemplaza solamente el bloque protegido de configuración.
+3. Valida el script actualizado de PowerShell.
+4. Lo activa únicamente si la validación es correcta.
+
+`FormatGrids.ps1` no lee `settings.json` durante el formateo normal. El formateador continúa funcionando aunque se elimine toda la carpeta Settings.

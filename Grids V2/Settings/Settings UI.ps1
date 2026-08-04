@@ -41,7 +41,7 @@ function Get-ManagedBlock($data) {
     $lines=[System.Collections.Generic.List[string]]::new()
     [void]$lines.Add($beginMarker)
     [void]$lines.Add('$ManagedSettings = [ordered]@{')
-    [void]$lines.Add('    Version             = "2.0.3-dev"')
+    [void]$lines.Add('    Version             = "2.0.4-dev"')
     [void]$lines.Add(('    Language            = "{0}"' -f $data.language))
     [void]$lines.Add(('    UtcOffset           = {0}' -f [int]$data.utcOffset))
     [void]$lines.Add(('    UtcLabel            = "{0}"' -f ([string]$data.utcLabel).Replace('"','`"')))
@@ -164,18 +164,76 @@ function Read-ManagedBlockAsData([string]$ps1Path) {
     return [pscustomobject]$result
 }
 
+$script:UiLanguage = 'English'
+$script:data = $null
+$script:Ui = @{}
+
+$uiErrorFolder = Join-Path $root 'AI\Logs'
+if (-not (Test-Path -LiteralPath $uiErrorFolder -PathType Container)) { $uiErrorFolder = $settingsFolder }
+$uiErrorLog = Join-Path $uiErrorFolder 'settings_ui_errors.log.txt'
+
+function Get-UiText([string]$key) {
+    $english = @{
+        FormTitle='Grid Formatter V2 Settings'; LanguageSwitch='Español'; GeneralGroup='General Settings'
+        OutputLanguage='PowerShell display language'; Offset='UTC/GMT offset'; UtcLabel='UTC/GMT label'
+        PrinterEnabled='Enable automatic printer color setup'; PrinterName='Printer name'
+        TabsGroup='Worksheets to Format'; TabsInfo='Enter X to format all matching worksheets, or enter a number and choose First/Last.'
+        FixedLayout='Formatting sizes are fixed per grid type and are not editable in this simplified V1 settings screen.'
+        GridType='Grid type'; Tabs='Tabs (X or number)'; Position='Position (First/Last)'
+        Save='Save Settings'; Reset='Reset Defaults'; Restore='Restore Backup'; Close='Close'
+        Saved='Settings were saved into FormatGrids.ps1. The formatter remains self-contained.'
+        ResetConfirm='Reset the visible settings to their defaults?'; NoBackups='No backups exist yet. A backup is created automatically whenever settings are saved.'
+        Restored='Settings restored from'; PickerTitle='Restore Backup'; PickerLabel='Choose a backup to restore:'
+        PickerRestore='Restore'; PickerCancel='Cancel'; ErrorTitle='Settings Error'
+    }
+    $spanish = @{
+        FormTitle='Configuración del Formateador de Grillas V2'; LanguageSwitch='English'; GeneralGroup='Configuración General'
+        OutputLanguage='Idioma mostrado por PowerShell'; Offset='Diferencia UTC/GMT'; UtcLabel='Etiqueta UTC/GMT'
+        PrinterEnabled='Activar configuración automática de color'; PrinterName='Nombre de la impresora'
+        TabsGroup='Hojas que se Formatearán'; TabsInfo='Escriba X para todas las hojas compatibles, o un número y seleccione First/Last.'
+        FixedLayout='Los tamaños de formato son fijos para cada tipo de grilla y no se editan en esta pantalla simplificada V1.'
+        GridType='Tipo de grilla'; Tabs='Hojas (X o número)'; Position='Posición (First/Last)'
+        Save='Guardar Configuración'; Reset='Restablecer Valores'; Restore='Restaurar Respaldo'; Close='Cerrar'
+        Saved='La configuración se guardó dentro de FormatGrids.ps1. El formateador continúa siendo independiente.'
+        ResetConfirm='¿Restablecer la configuración visible a sus valores predeterminados?'; NoBackups='Todavía no existen respaldos. Se crea uno automáticamente cada vez que se guarda.'
+        Restored='Configuración restaurada desde'; PickerTitle='Restaurar Respaldo'; PickerLabel='Seleccione un respaldo para restaurar:'
+        PickerRestore='Restaurar'; PickerCancel='Cancelar'; ErrorTitle='Error de Configuración'
+    }
+    if ($script:UiLanguage -eq 'Spanish') { return [string]$spanish[$key] }
+    return [string]$english[$key]
+}
+
+function Write-SettingsUiError($errorRecord) {
+    try {
+        $lines = @(
+            ('=' * 72),
+            (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'),
+            "Message: $($errorRecord.Exception.Message)",
+            "Type: $($errorRecord.Exception.GetType().FullName)",
+            "Stack: $($errorRecord.ScriptStackTrace)",
+            "Invocation: $($errorRecord.InvocationInfo.PositionMessage)"
+        )
+        $lines | Add-Content -LiteralPath $uiErrorLog -Encoding UTF8
+    } catch {}
+}
+
+function Show-UiError($errorRecord) {
+    Write-SettingsUiError $errorRecord
+    [Windows.Forms.MessageBox]::Show($errorRecord.Exception.Message,(Get-UiText 'ErrorTitle'),'OK','Error') | Out-Null
+}
+
 function Show-BackupPicker($backups) {
     $picker=New-Object Windows.Forms.Form
-    $picker.Text='Restore Backup / Restaurar Respaldo'
-    $picker.Size=New-Object Drawing.Size(420,380); $picker.StartPosition='CenterParent'
-    $picker.MaximizeBox=$false; $picker.MinimizeBox=$false
-    $lbl=New-Object Windows.Forms.Label; $lbl.Text='Choose a backup to restore / Elija un respaldo para restaurar:'; $lbl.Location='10,10'; $lbl.Size='390,20'
-    $list=New-Object Windows.Forms.ListBox; $list.Location='10,35'; $list.Size='390,250'
+    $picker.Text=Get-UiText 'PickerTitle'
+    $picker.Size=New-Object Drawing.Size(460,390); $picker.StartPosition='CenterParent'
+    $picker.FormBorderStyle='FixedDialog'; $picker.MaximizeBox=$false; $picker.MinimizeBox=$false
+    $lbl=New-Object Windows.Forms.Label; $lbl.Text=Get-UiText 'PickerLabel'; $lbl.Location='15,15'; $lbl.Size='415,24'
+    $list=New-Object Windows.Forms.ListBox; $list.Location='15,45'; $list.Size='415,250'
     foreach ($b in $backups) { [void]$list.Items.Add(('{0:yyyy-MM-dd HH:mm:ss}   {1}' -f $b.LastWriteTime,$b.Name)) }
     if ($list.Items.Count -gt 0) { $list.SelectedIndex=0 }
-    $ok=New-Object Windows.Forms.Button; $ok.Text='Restore / Restaurar'; $ok.Location='10,300'; $ok.Size='180,36'; $ok.DialogResult='OK'
-    $cancel=New-Object Windows.Forms.Button; $cancel.Text='Cancel / Cancelar'; $cancel.Location='220,300'; $cancel.Size='180,36'; $cancel.DialogResult='Cancel'
-    $picker.Controls.AddRange(@($lbl,$list,$ok,$cancel))
+    $ok=New-Object Windows.Forms.Button; $ok.Text=Get-UiText 'PickerRestore'; $ok.Location='125,310'; $ok.Size='145,36'; $ok.DialogResult='OK'
+    $cancel=New-Object Windows.Forms.Button; $cancel.Text=Get-UiText 'PickerCancel'; $cancel.Location='285,310'; $cancel.Size='145,36'; $cancel.DialogResult='Cancel'
+    $picker.Controls.Add($lbl); $picker.Controls.Add($list); $picker.Controls.Add($ok); $picker.Controls.Add($cancel)
     $picker.AcceptButton=$ok; $picker.CancelButton=$cancel
     $picker.Add_Shown({ $list.Focus() })
     $result=$picker.ShowDialog()
@@ -183,147 +241,175 @@ function Show-BackupPicker($backups) {
     return $null
 }
 
-$data=Load-Settings
-$form=New-Object Windows.Forms.Form
-$form.Text="Grid Formatter V2 Settings / Configuracion"
-$form.Size=New-Object Drawing.Size(850,700); $form.StartPosition='CenterScreen'; $form.MaximizeBox=$false
-
-# Tab Control for organizing settings
-$tabControl = New-Object Windows.Forms.TabControl
-$tabControl.Location = '10,10'
-$tabControl.Size = '820,600'
-$tabControl.TabIndex = 0
-
-# Tab 1: General & Tabs Settings
-$tabGeneral = New-Object Windows.Forms.TabPage
-$tabGeneral.Text = "General / General"
-$tabControl.TabPages.Add($tabGeneral)
-
-# Tab 2: Layout Settings
-$tabLayout = New-Object Windows.Forms.TabPage
-$tabLayout.Text = "Layout / Diseno"
-$tabControl.TabPages.Add($tabLayout)
-
-# ===== General Tab Controls =====
-$labelLang=New-Object Windows.Forms.Label; $labelLang.Text='Console language / Idioma:'; $labelLang.Location='10,10'; $labelLang.AutoSize=$true
-$comboLang=New-Object Windows.Forms.ComboBox; $comboLang.Location='200,6'; $comboLang.Width=150; $comboLang.DropDownStyle='DropDownList'; [void]$comboLang.Items.AddRange(@('English','Spanish')); $comboLang.SelectedItem=[string]$data.language
-$labelOffset=New-Object Windows.Forms.Label; $labelOffset.Text='UTC/GMT offset:'; $labelOffset.Location='10,45'; $labelOffset.AutoSize=$true
-$numOffset=New-Object Windows.Forms.NumericUpDown; $numOffset.Location='200,41'; $numOffset.Minimum=-12; $numOffset.Maximum=14; $numOffset.Value=[decimal]$data.utcOffset
-$labelUtc=New-Object Windows.Forms.Label; $labelUtc.Text='UTC/GMT label:'; $labelUtc.Location='390,45'; $labelUtc.AutoSize=$true
-$textUtc=New-Object Windows.Forms.TextBox; $textUtc.Location='520,41'; $textUtc.Width=180; $textUtc.Text=[string]$data.utcLabel
-$checkPrinter=New-Object Windows.Forms.CheckBox; $checkPrinter.Text='Enable automatic printer color setup / Activar color'; $checkPrinter.Location='10,81'; $checkPrinter.Width=360; $checkPrinter.Checked=[bool]$data.printerColorEnabled
-$labelPrinter=New-Object Windows.Forms.Label; $labelPrinter.Text='Printer name / Impresora:'; $labelPrinter.Location='390,85'; $labelPrinter.AutoSize=$true
-$textPrinter=New-Object Windows.Forms.TextBox; $textPrinter.Location='520,81'; $textPrinter.Width=180; $textPrinter.Text=[string]$data.printerName
-
-$info=New-Object Windows.Forms.Label; $info.Text='Tabs: enter X for all, or a number. Position controls First/Last. Rev TV and SportyNet always filter matching tabs first.'; $info.Location='10,120'; $info.Size='780,35'
-$grid=New-Object Windows.Forms.DataGridView; $grid.Location='10,160'; $grid.Size='780,250'; $grid.AllowUserToAddRows=$false; $grid.RowHeadersVisible=$false; $grid.AutoSizeColumnsMode='Fill'
-$c1=New-Object Windows.Forms.DataGridViewTextBoxColumn; $c1.Name='GridType'; $c1.HeaderText='Grid type / Tipo'; $c1.ReadOnly=$true
-$c2=New-Object Windows.Forms.DataGridViewTextBoxColumn; $c2.Name='Tabs'; $c2.HeaderText='Tabs (X or number)'
-$c3=New-Object Windows.Forms.DataGridViewComboBoxColumn; $c3.Name='Position'; $c3.HeaderText='Position / Posicion'; [void]$c3.Items.AddRange(@('First','Last'))
-[void]$grid.Columns.AddRange([Windows.Forms.DataGridViewColumn[]]@($c1,$c2,$c3))
-$display=[ordered]@{CATV='CATV';TVD='TVD';PASIONES_LATAM='Pasiones LATAM';PASIONES_US='Pasiones US';TODO_NOVELAS='Todo Novelas';REV_TV='REV TV';SPORTYNET='SportyNet'}
-foreach ($name in $display.Keys) { $idx=$grid.Rows.Add($display[$name],[string]$data.tabs.$name.tabs,[string]$data.tabs.$name.position); $grid.Rows[$idx].Tag=$name }
-
-$save=New-Object Windows.Forms.Button; $save.Text='Save Settings / Guardar'; $save.Location='10,440'; $save.Size='210,42'
-$reset=New-Object Windows.Forms.Button; $reset.Text='Reset Defaults / Predeterminados'; $reset.Location='230,440'; $reset.Size='230,42'
-$close=New-Object Windows.Forms.Button; $close.Text='Close / Cerrar'; $close.Location='470,440'; $close.Size='210,42'
-$restoreBackup=New-Object Windows.Forms.Button; $restoreBackup.Text='Restore Backup / Restaurar Respaldo'; $restoreBackup.Location='10,490'; $restoreBackup.Size='300,42'
-
-$tabGeneral.Controls.AddRange(@($labelLang,$comboLang,$labelOffset,$numOffset,$labelUtc,$textUtc,$checkPrinter,$labelPrinter,$textPrinter,$info,$grid,$save,$reset,$close,$restoreBackup))
-
-# ===== Layout Tab Controls =====
-$infoLayout=New-Object Windows.Forms.Label; $infoLayout.Text='Set row heights, column widths, and font size per grid type. All values must be positive integers.'; $infoLayout.Location='10,10'; $infoLayout.Size='780,35'
-$gridLayout=New-Object Windows.Forms.DataGridView; $gridLayout.Location='10,50'; $gridLayout.Size='780,360'; $gridLayout.AllowUserToAddRows=$false; $gridLayout.RowHeadersVisible=$false; $gridLayout.AutoSizeColumnsMode='Fill'
-
-$l1=New-Object Windows.Forms.DataGridViewTextBoxColumn; $l1.Name='GridType'; $l1.HeaderText='Grid Type'; $l1.ReadOnly=$true; $l1.Width=120
-$l2=New-Object Windows.Forms.DataGridViewTextBoxColumn; $l2.Name='FontSize'; $l2.HeaderText='Font'; $l2.Width=60
-$l3=New-Object Windows.Forms.DataGridViewTextBoxColumn; $l3.Name='DefaultRowHeight'; $l3.HeaderText='Row H'; $l3.Width=60
-$l4=New-Object Windows.Forms.DataGridViewTextBoxColumn; $l4.Name='HeaderRowHeight'; $l4.HeaderText='Header H'; $l4.Width=60
-$l5=New-Object Windows.Forms.DataGridViewTextBoxColumn; $l5.Name='SmallColumnWidth'; $l5.HeaderText='Small Col'; $l5.Width=60
-$l6=New-Object Windows.Forms.DataGridViewTextBoxColumn; $l6.Name='DefaultColumnWidth'; $l6.HeaderText='Col Width'; $l6.Width=60
-[void]$gridLayout.Columns.AddRange([Windows.Forms.DataGridViewColumn[]]@($l1,$l2,$l3,$l4,$l5,$l6))
-foreach ($name in $display.Keys) {
-    $entry=$data.layout.$name
-    $idx=$gridLayout.Rows.Add($display[$name],$entry.fontSize,$entry.defaultRowHeight,$entry.headerRowHeight,$entry.smallColumnWidth,$entry.defaultColumnWidth)
-    $gridLayout.Rows[$idx].Tag=$name
-}
-
-$saveLayout=New-Object Windows.Forms.Button; $saveLayout.Text='Save Settings / Guardar'; $saveLayout.Location='10,440'; $saveLayout.Size='210,42'
-$resetLayout=New-Object Windows.Forms.Button; $resetLayout.Text='Reset Defaults / Predeterminados'; $resetLayout.Location='230,440'; $resetLayout.Size='230,42'
-$closeLayout=New-Object Windows.Forms.Button; $closeLayout.Text='Close / Cerrar'; $closeLayout.Location='470,440'; $closeLayout.Size='210,42'
-$restoreLayout=New-Object Windows.Forms.Button; $restoreLayout.Text='Restore Backup / Restaurar Respaldo'; $restoreLayout.Location='10,490'; $restoreLayout.Size='300,42'
-
-$tabLayout.Controls.AddRange(@($infoLayout,$gridLayout,$saveLayout,$resetLayout,$closeLayout,$restoreLayout))
-
-# ===== Form Controls =====
-$form.Controls.Add($tabControl)
-
-# ===== Event Handlers =====
-$save.Add_Click({
-    try {
-        $new=[ordered]@{language=[string]$comboLang.SelectedItem;utcOffset=[int]$numOffset.Value;utcLabel=$textUtc.Text.Trim();printerColorEnabled=[bool]$checkPrinter.Checked;printerName=$textPrinter.Text.Trim();tabs=[ordered]@{};layout=[ordered]@{}}
-        foreach ($row in $grid.Rows) { $new.tabs[$row.Tag]=[ordered]@{tabs=([string]$row.Cells['Tabs'].Value).Trim();position=[string]$row.Cells['Position'].Value} }
-        foreach ($row in $gridLayout.Rows) {
-            $new.layout[$row.Tag]=[ordered]@{
-                fontSize=([string]$row.Cells['FontSize'].Value).Trim()
-                defaultRowHeight=([string]$row.Cells['DefaultRowHeight'].Value).Trim()
-                headerRowHeight=([string]$row.Cells['HeaderRowHeight'].Value).Trim()
-                smallColumnWidth=([string]$row.Cells['SmallColumnWidth'].Value).Trim()
-                defaultColumnWidth=([string]$row.Cells['DefaultColumnWidth'].Value).Trim()
-            }
+function Get-CurrentFormData {
+    $new=[ordered]@{
+        language=[string]$script:Ui.ComboLanguage.SelectedItem
+        utcOffset=[int]$script:Ui.Offset.Value
+        utcLabel=$script:Ui.UtcLabel.Text.Trim()
+        printerColorEnabled=[bool]$script:Ui.PrinterEnabled.Checked
+        printerName=$script:Ui.PrinterName.Text.Trim()
+        tabs=[ordered]@{}
+        # Layout values remain preserved for backward compatibility, but the
+        # simplified V1 UI no longer exposes misleading generic dimensions.
+        layout=$script:data.layout
+    }
+    foreach ($row in $script:Ui.Grid.Rows) {
+        $name=[string]$row.Tag
+        $new.tabs[$name]=[ordered]@{
+            tabs=([string]$row.Cells['Tabs'].Value).Trim()
+            position=[string]$row.Cells['Position'].Value
         }
-        Save-Settings ([pscustomobject]$new)
-        [Windows.Forms.MessageBox]::Show('Settings saved into FormatGrids.ps1. The formatter remains self-contained. / Configuracion guardada en FormatGrids.ps1.','Grid Formatter V2','OK','Information') | Out-Null
-    } catch { [Windows.Forms.MessageBox]::Show($_.Exception.Message,'Error','OK','Error') | Out-Null }
-})
-$reset.Add_Click({
-    $d=Clone-Defaults; $comboLang.SelectedItem=$d.language; $numOffset.Value=[decimal]$d.utcOffset; $textUtc.Text=$d.utcLabel; $checkPrinter.Checked=$d.printerColorEnabled; $textPrinter.Text=$d.printerName
-    foreach ($row in $grid.Rows) { $name=$row.Tag; $row.Cells['Tabs'].Value=[string]$d.tabs.$name.tabs; $row.Cells['Position'].Value=[string]$d.tabs.$name.position }
-})
-$close.Add_Click({$form.Close()})
+    }
+    return [pscustomobject]$new
+}
 
 function Refresh-FormFromData($d) {
-    $comboLang.SelectedItem=[string]$d.language; $numOffset.Value=[decimal]$d.utcOffset; $textUtc.Text=[string]$d.utcLabel
-    $checkPrinter.Checked=[bool]$d.printerColorEnabled; $textPrinter.Text=[string]$d.printerName
-    foreach ($row in $grid.Rows) { $name=$row.Tag; $row.Cells['Tabs'].Value=[string]$d.tabs.$name.tabs; $row.Cells['Position'].Value=[string]$d.tabs.$name.position }
-    foreach ($row in $gridLayout.Rows) {
-        $name=$row.Tag
-        $row.Cells['FontSize'].Value=[string]$d.layout.$name.fontSize
-        $row.Cells['DefaultRowHeight'].Value=[string]$d.layout.$name.defaultRowHeight
-        $row.Cells['HeaderRowHeight'].Value=[string]$d.layout.$name.headerRowHeight
-        $row.Cells['SmallColumnWidth'].Value=[string]$d.layout.$name.smallColumnWidth
-        $row.Cells['DefaultColumnWidth'].Value=[string]$d.layout.$name.defaultColumnWidth
+    $script:Ui.ComboLanguage.SelectedItem=[string]$d.language
+    $script:Ui.Offset.Value=[decimal]$d.utcOffset
+    $script:Ui.UtcLabel.Text=[string]$d.utcLabel
+    $script:Ui.PrinterEnabled.Checked=[bool]$d.printerColorEnabled
+    $script:Ui.PrinterName.Text=[string]$d.printerName
+    foreach ($row in $script:Ui.Grid.Rows) {
+        $name=[string]$row.Tag
+        $row.Cells['Tabs'].Value=[string]$d.tabs.$name.tabs
+        $row.Cells['Position'].Value=[string]$d.tabs.$name.position
     }
 }
-$restoreBackup.Add_Click({
-    try {
-        $backups=Get-AvailableBackups
-        if ($backups.Count -eq 0) {
-            [Windows.Forms.MessageBox]::Show('No backups found yet. One is created automatically every time you save. / No hay respaldos todavia. Se crea uno automaticamente cada vez que guarda.','Grid Formatter V2','OK','Information') | Out-Null
-            return
-        }
-        $chosen=Show-BackupPicker $backups
-        if ($null -eq $chosen) { return }
-        $restoredData=Read-ManagedBlockAsData $chosen.FullName
-        Save-Settings $restoredData
-        Refresh-FormFromData $restoredData
-        [Windows.Forms.MessageBox]::Show("Restored from $($chosen.Name). Your settings just before this restore were backed up automatically. / Restaurado desde $($chosen.Name). Su configuracion justo antes de este restauro se respaldo automaticamente.",'Grid Formatter V2','OK','Information') | Out-Null
-    } catch { [Windows.Forms.MessageBox]::Show($_.Exception.Message,'Error','OK','Error') | Out-Null }
-})
 
-$saveLayout.Add_Click({ & $save.Add_Click.Invoke() })
-$restoreLayout.Add_Click({ & $restoreBackup.Add_Click.Invoke() })
-$resetLayout.Add_Click({
-    $d=Clone-Defaults
-    foreach ($row in $gridLayout.Rows) {
-        $name=$row.Tag
-        $row.Cells['FontSize'].Value=[string]$d.layout.$name.fontSize
-        $row.Cells['DefaultRowHeight'].Value=[string]$d.layout.$name.defaultRowHeight
-        $row.Cells['HeaderRowHeight'].Value=[string]$d.layout.$name.headerRowHeight
-        $row.Cells['SmallColumnWidth'].Value=[string]$d.layout.$name.smallColumnWidth
-        $row.Cells['DefaultColumnWidth'].Value=[string]$d.layout.$name.defaultColumnWidth
+function Apply-UiLanguage {
+    $script:Ui.Form.Text=Get-UiText 'FormTitle'
+    $script:Ui.LanguageSwitch.Text=Get-UiText 'LanguageSwitch'
+    $script:Ui.GeneralGroup.Text=Get-UiText 'GeneralGroup'
+    $script:Ui.LabelLanguage.Text=Get-UiText 'OutputLanguage'
+    $script:Ui.LabelOffset.Text=Get-UiText 'Offset'
+    $script:Ui.LabelUtc.Text=Get-UiText 'UtcLabel'
+    $script:Ui.PrinterEnabled.Text=Get-UiText 'PrinterEnabled'
+    $script:Ui.LabelPrinter.Text=Get-UiText 'PrinterName'
+    $script:Ui.TabsGroup.Text=Get-UiText 'TabsGroup'
+    $script:Ui.TabsInfo.Text=Get-UiText 'TabsInfo'
+    $script:Ui.FixedLayout.Text=Get-UiText 'FixedLayout'
+    $script:Ui.Grid.Columns['GridType'].HeaderText=Get-UiText 'GridType'
+    $script:Ui.Grid.Columns['Tabs'].HeaderText=Get-UiText 'Tabs'
+    $script:Ui.Grid.Columns['Position'].HeaderText=Get-UiText 'Position'
+    $script:Ui.Save.Text=Get-UiText 'Save'
+    $script:Ui.Reset.Text=Get-UiText 'Reset'
+    $script:Ui.Restore.Text=Get-UiText 'Restore'
+    $script:Ui.Close.Text=Get-UiText 'Close'
+}
+
+function Start-SettingsUi {
+    $script:data=Load-Settings
+    $form=New-Object Windows.Forms.Form
+    $form.Size=New-Object Drawing.Size(880,650); $form.StartPosition='CenterScreen'
+    $form.FormBorderStyle='FixedDialog'; $form.MaximizeBox=$false; $form.MinimizeBox=$true
+    $form.Font=New-Object Drawing.Font('Segoe UI',9)
+
+    $switch=New-Object Windows.Forms.Button; $switch.Location='735,15'; $switch.Size='105,34'
+
+    $general=New-Object Windows.Forms.GroupBox; $general.Location='20,55'; $general.Size='820,145'
+    $labelLang=New-Object Windows.Forms.Label; $labelLang.Location='20,33'; $labelLang.Size='210,24'
+    $comboLang=New-Object Windows.Forms.ComboBox; $comboLang.Location='245,29'; $comboLang.Size='150,28'; $comboLang.DropDownStyle='DropDownList'
+    [void]$comboLang.Items.Add('English'); [void]$comboLang.Items.Add('Spanish')
+    $labelOffset=New-Object Windows.Forms.Label; $labelOffset.Location='430,33'; $labelOffset.Size='145,24'
+    $numOffset=New-Object Windows.Forms.NumericUpDown; $numOffset.Location='590,29'; $numOffset.Size='80,28'; $numOffset.Minimum=-12; $numOffset.Maximum=14
+    $labelUtc=New-Object Windows.Forms.Label; $labelUtc.Location='20,76'; $labelUtc.Size='210,24'
+    $textUtc=New-Object Windows.Forms.TextBox; $textUtc.Location='245,72'; $textUtc.Size='150,27'
+    $checkPrinter=New-Object Windows.Forms.CheckBox; $checkPrinter.Location='430,75'; $checkPrinter.Size='360,25'
+    $labelPrinter=New-Object Windows.Forms.Label; $labelPrinter.Location='20,110'; $labelPrinter.Size='210,24'
+    $textPrinter=New-Object Windows.Forms.TextBox; $textPrinter.Location='245,106'; $textPrinter.Size='545,27'
+    foreach ($control in @($labelLang,$comboLang,$labelOffset,$numOffset,$labelUtc,$textUtc,$checkPrinter,$labelPrinter,$textPrinter)) { $general.Controls.Add($control) }
+
+    $tabsGroup=New-Object Windows.Forms.GroupBox; $tabsGroup.Location='20,210'; $tabsGroup.Size='820,315'
+    $info=New-Object Windows.Forms.Label; $info.Location='20,28'; $info.Size='775,38'
+    $grid=New-Object Windows.Forms.DataGridView; $grid.Location='20,70'; $grid.Size='775,205'
+    $grid.AllowUserToAddRows=$false; $grid.AllowUserToDeleteRows=$false; $grid.RowHeadersVisible=$false
+    $grid.AutoSizeColumnsMode='None'; $grid.SelectionMode='CellSelect'; $grid.MultiSelect=$false
+    $grid.RowTemplate.Height=28
+    $c1=New-Object Windows.Forms.DataGridViewTextBoxColumn; $c1.Name='GridType'; $c1.ReadOnly=$true; $c1.Width=300
+    $c2=New-Object Windows.Forms.DataGridViewTextBoxColumn; $c2.Name='Tabs'; $c2.Width=190
+    $c3=New-Object Windows.Forms.DataGridViewComboBoxColumn; $c3.Name='Position'; $c3.Width=240
+    [void]$c3.Items.Add('First'); [void]$c3.Items.Add('Last')
+    $null=$grid.Columns.Add($c1); $null=$grid.Columns.Add($c2); $null=$grid.Columns.Add($c3)
+    $display=[ordered]@{CATV='CATV';TVD='TVD';PASIONES_LATAM='Pasiones LATAM';PASIONES_US='Pasiones US';TODO_NOVELAS='Todo Novelas';REV_TV='REV TV';SPORTYNET='SportyNet'}
+    foreach ($name in $display.Keys) {
+        $idx=$grid.Rows.Add($display[$name],[string]$script:data.tabs.$name.tabs,[string]$script:data.tabs.$name.position)
+        if ($idx -lt 0) { throw "Could not create settings row for $name." }
+        $grid.Rows[$idx].Tag=$name
     }
-})
-$closeLayout.Add_Click({$form.Close()})
+    $fixedLayout=New-Object Windows.Forms.Label; $fixedLayout.Location='20,282'; $fixedLayout.Size='775,26'; $fixedLayout.ForeColor=[Drawing.Color]::DimGray
+    $tabsGroup.Controls.Add($info); $tabsGroup.Controls.Add($grid); $tabsGroup.Controls.Add($fixedLayout)
 
-[void]$form.ShowDialog()
+    $save=New-Object Windows.Forms.Button; $save.Location='20,545'; $save.Size='185,42'
+    $reset=New-Object Windows.Forms.Button; $reset.Location='220,545'; $reset.Size='185,42'
+    $restore=New-Object Windows.Forms.Button; $restore.Location='420,545'; $restore.Size='185,42'
+    $close=New-Object Windows.Forms.Button; $close.Location='620,545'; $close.Size='220,42'
+
+    $form.Controls.Add($switch); $form.Controls.Add($general); $form.Controls.Add($tabsGroup)
+    $form.Controls.Add($save); $form.Controls.Add($reset); $form.Controls.Add($restore); $form.Controls.Add($close)
+    $form.AcceptButton=$save; $form.CancelButton=$close
+
+    $script:Ui=@{
+        Form=$form; LanguageSwitch=$switch; GeneralGroup=$general; LabelLanguage=$labelLang
+        ComboLanguage=$comboLang; LabelOffset=$labelOffset; Offset=$numOffset; LabelUtc=$labelUtc
+        UtcLabel=$textUtc; PrinterEnabled=$checkPrinter; LabelPrinter=$labelPrinter; PrinterName=$textPrinter
+        TabsGroup=$tabsGroup; TabsInfo=$info; Grid=$grid; FixedLayout=$fixedLayout
+        Save=$save; Reset=$reset; Restore=$restore; Close=$close
+    }
+    Refresh-FormFromData $script:data
+    Apply-UiLanguage
+
+    $switch.Add_Click({
+        if ($script:UiLanguage -eq 'English') { $script:UiLanguage='Spanish' } else { $script:UiLanguage='English' }
+        Apply-UiLanguage
+    })
+    $save.Add_Click({
+        try {
+            $new=Get-CurrentFormData
+            Save-Settings $new
+            $script:data=$new
+            [Windows.Forms.MessageBox]::Show((Get-UiText 'Saved'),(Get-UiText 'FormTitle'),'OK','Information') | Out-Null
+        } catch { Show-UiError $_ }
+    })
+    $reset.Add_Click({
+        $result=[Windows.Forms.MessageBox]::Show((Get-UiText 'ResetConfirm'),(Get-UiText 'FormTitle'),'YesNo','Question')
+        if ($result -eq 'Yes') { $script:data=Clone-Defaults; Refresh-FormFromData $script:data }
+    })
+    $restore.Add_Click({
+        try {
+            $backups=Get-AvailableBackups
+            if ($backups.Count -eq 0) {
+                [Windows.Forms.MessageBox]::Show((Get-UiText 'NoBackups'),(Get-UiText 'FormTitle'),'OK','Information') | Out-Null
+                return
+            }
+            $chosen=Show-BackupPicker $backups
+            if ($null -eq $chosen) { return }
+            $restoredData=Read-ManagedBlockAsData $chosen.FullName
+            Save-Settings $restoredData
+            $script:data=$restoredData
+            Refresh-FormFromData $script:data
+            [Windows.Forms.MessageBox]::Show("$(Get-UiText 'Restored'): $($chosen.Name)",(Get-UiText 'FormTitle'),'OK','Information') | Out-Null
+        } catch { Show-UiError $_ }
+    })
+    $close.Add_Click({ $form.Close() })
+
+    if ($env:GRID_SETTINGS_UI_SELFTEST -eq '1') {
+        if ($grid.Columns.Count -ne 3) { throw "Settings UI expected 3 columns, found $($grid.Columns.Count)." }
+        if ($grid.Rows.Count -ne 7) { throw "Settings UI expected 7 grid rows, found $($grid.Rows.Count)." }
+        if ($save.Text -ne 'Save Settings' -or $reset.Text -ne 'Reset Defaults' -or $restore.Text -ne 'Restore Backup' -or $close.Text -ne 'Close') {
+            throw 'Settings UI did not start with English action buttons.'
+        }
+        $script:UiLanguage='Spanish'; Apply-UiLanguage
+        if ($save.Text -ne 'Guardar Configuración' -or $close.Text -ne 'Cerrar') { throw 'Settings UI Spanish switch failed.' }
+        $script:UiLanguage='English'; Apply-UiLanguage
+        Write-Output 'SETTINGS_UI_SELFTEST_PASS'
+        return
+    }
+
+    [void]$form.ShowDialog()
+}
+
+try { Start-SettingsUi }
+catch {
+    Write-SettingsUiError $_
+    [Windows.Forms.MessageBox]::Show($_.Exception.Message,(Get-UiText 'ErrorTitle'),'OK','Error') | Out-Null
+}

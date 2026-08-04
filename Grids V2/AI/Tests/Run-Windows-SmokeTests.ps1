@@ -25,6 +25,7 @@ try {
         'SNETL - Week 31.xlsx' = Join-Path $projectRoot 'AI\References\SportyNet\SNETL - Week 31.xlsx'
         'WEEK 31 V.4 1.xlsx' = Join-Path $projectRoot 'AI\References\SportyNet\WEEK 31 V.4 1.xlsx'
         'Week 32.xlsx' = Join-Path $projectRoot 'AI\References\SportyNet\Week 32.xlsx'
+        'WEEK 30 V2.xlsx' = Join-Path $projectRoot 'AI\References\SportyNet\WEEK 30 V2.xlsx'
         'Mystery Grid.xlsx' = Join-Path $projectRoot 'AI\References\SportyNet\Week 32.xlsx'
     }
     foreach ($entry in $fixtureMap.GetEnumerator()) {
@@ -75,7 +76,7 @@ try {
     $excel = New-Object -ComObject Excel.Application
     $excel.Visible = $false; $excel.DisplayAlerts = $false
     try {
-        foreach ($name in @('SNETL - Week 31.xlsx','WEEK 31 V.4 1.xlsx','Week 32.xlsx','Mystery Grid.xlsx')) {
+        foreach ($name in @('SNETL - Week 31.xlsx','WEEK 31 V.4 1.xlsx','Week 32.xlsx','WEEK 30 V2.xlsx','Mystery Grid.xlsx')) {
             $path = Join-Path $tempRoot $name
             $book = $excel.Workbooks.Open($path,$null,$true)
             try {
@@ -84,6 +85,11 @@ try {
                 if ([Math]::Abs(([double]$sheet.Cells.Item(18,1).Value2) - (6.75/24.0)) -gt 0.0000001) { throw "$name A18 was not normalized to 06:45." }
                 if ([Math]::Abs(([double]$sheet.Cells.Item(30,2).Value2) - (6.75/24.0)) -gt 0.0000001) { throw "$name B30 was not normalized to 06:45." }
                 if ([Math]::Abs(([double]$sheet.Cells.Item(30,3).Value2) - (3.75/24.0)) -gt 0.0000001) { throw "$name C30 was not normalized to 03:45 CDMX." }
+                if ($name -eq 'WEEK 30 V2.xlsx') {
+                    $expectedProgram = "AMISTOSO INTERNACIONAL`n2026`nBenfica x Villareal`n17/07 vt"
+                    $actualProgram = [string]$sheet.Cells.Item(73,4).Value2
+                    if ($actualProgram -ne $expectedProgram) { throw "$name D73 internal-blank normalization failed. Actual: $actualProgram" }
+                }
             } finally { $book.Close($false) }
         }
     } finally {
@@ -92,16 +98,26 @@ try {
         [GC]::Collect(); [GC]::WaitForPendingFinalizers()
     }
 
+    $settingsUi = Join-Path $projectRoot 'Settings\Settings UI.ps1'
+    if (-not (Test-Path -LiteralPath $settingsUi)) { throw "Missing Settings UI: $settingsUi" }
+    $env:GRID_SETTINGS_UI_SELFTEST='1'
+    $uiOutput = & "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -STA -File $settingsUi 2>&1 | Out-String
+    $uiExitCode=$LASTEXITCODE
+    Remove-Item Env:GRID_SETTINGS_UI_SELFTEST -ErrorAction SilentlyContinue
+    if ($uiExitCode -ne 0 -or $uiOutput -notmatch 'SETTINGS_UI_SELFTEST_PASS') { throw "Settings UI self-test failed: $uiOutput" }
+
     Write-Host 'PASS: PowerShell syntax' -ForegroundColor Green
     Write-Host 'PASS: No Calculation assignment' -ForegroundColor Green
     Write-Host 'PASS: Runtime works without Settings or AI folders' -ForegroundColor Green
     Write-Host 'PASS: Existing grid routes completed without reported errors' -ForegroundColor Green
-    Write-Host 'PASS: Real SNETL, Mex-left, Week 32, and soft-fallback SportyNet files formatted correctly' -ForegroundColor Green
+    Write-Host 'PASS: Real SNETL, Mex-left, Week 32, Week 30 internal-blank, and soft-fallback SportyNet files formatted correctly' -ForegroundColor Green
+    Write-Host 'PASS: Settings UI opens with English buttons and switches to Spanish' -ForegroundColor Green
     Write-Host 'PASS: Unrelated workbook was skipped and unchanged' -ForegroundColor Green
     $preserveTemp = $false
 } finally {
     Remove-Item Env:GRID_FORMATTER_NO_PAUSE -ErrorAction SilentlyContinue
     Remove-Item Env:GRID_FORMATTER_SKIP_PRINTER -ErrorAction SilentlyContinue
+    Remove-Item Env:GRID_SETTINGS_UI_SELFTEST -ErrorAction SilentlyContinue
     if ($preserveTemp) {
         Write-Host "Smoke-test files preserved for investigation: $tempRoot" -ForegroundColor Yellow
     } else {

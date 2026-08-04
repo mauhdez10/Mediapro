@@ -1,9 +1,16 @@
-# Settings Specification
+# Settings Specification — Grids V2 2.0.4-dev
 
-The Settings UI edits only the managed block in `FormatGrids.ps1`, creates a backup, validates the resulting PowerShell syntax using the Windows PowerShell parser, and then replaces the active script. `settings.json` is UI state only.
+The manager Settings UI exposes only the settings requested for the V1 workflow:
 
-Tab values accept `X` for all eligible sheets or an integer with First/Last. REV TV first filters sheets where `A1=Zone`. SportyNet first filters sheets using the strict SportyNet structure.
+- PowerShell display language
+- UTC/GMT offset and label
+- printer color automation and printer name
+- worksheet selection per grid type (`X`, First N, Last N)
 
-The global UTC setting applies to existing grid types that generate UTC columns. SportyNet uses the source GMT/BRT values and the fixed three-hour CDMX relationship.
+The UI starts in English and has an `Español`/`English` switch that changes only the Settings-window language. The separate PowerShell display-language selection controls the language embedded in `FormatGrids.ps1`.
 
-When the optional AI folder exists, a successful Settings save also refreshes `AI/Source/FormatGrids_V2.ps1`. Failure to update the optional source snapshot never blocks the active runtime script.
+Formatting dimensions are not user settings in the simplified V1 UI. Each grid formatter keeps its proven format-specific values. This avoids presenting generic values that do not describe Pasiones/Todo or SportyNet accurately.
+
+Saving settings creates a backup, replaces only the managed block in `FormatGrids.ps1`, validates PowerShell syntax, and then activates the change. The runtime never reads `settings.json`.
+
+`Open Settings.bat` launches `Open Settings.vbs`, which starts PowerShell hidden. Startup failures are written to `AI/Logs/settings_ui_errors.log.txt` when AI exists, otherwise to the Settings folder.
