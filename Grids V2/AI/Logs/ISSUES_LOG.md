@@ -12,6 +12,8 @@ Static validation is complete, but V2 must be run on disposable copies of each s
 
 None of today's code changes touch the CATV/TVD/Pasiones/Todo Novelas/REV_TV transformation logic at all (today's fixes were scoped to SportyNet's matrix-write COM bug, SportyNet's soft-signature routing, and the Settings UI), so there is no new regression risk from this session's work in those paths. But this item can't be fully closed until someone runs one genuinely fresh (never-formatted) copy of CATV/TVD/Pasiones/Todo Novelas/REV_TV through the formatter and confirms the output — that needs a real sample from an upcoming week, since none exists to test with today.
 
+**2026-08-04 update:** Ran `AI/Tests/Run-Windows-SmokeTests.ps1` end to end on real Windows Excel COM for the first time (it now covers all supported SportyNet naming/layout variants plus an unrelated-file-untouched check and a Settings UI self-test) -- 7/7 pass. This is additional SportyNet-specific confirmation on top of the above; the CATV/TVD/Pasiones/Todo Novelas/REV_TV gap is unchanged since the smoke test's fixtures for those types are also pre-formatted, same limitation as before.
+
 ## RESOLVED-V2-002 — Calculation property HRESULT 0x800A03EC
 
 The V2 runtime does not set `Excel.Application.Calculation`. Formatting does not require that state change.
@@ -46,27 +48,28 @@ Correction in `2.0.1-dev`: use `Value2`, accept `Mex/Mexico/CDMX`, determine the
 Status: code and static fixture validation complete; Windows rerun remains required under `OPEN-V2-001`.
 
 
-## ISS-005 — SportyNet COM value returned as System.Object[]
+## RESOLVED-ISS-005 — SportyNet COM value returned as System.Object[]
 
-- **Status:** fixed in 2.0.2-dev; pending Windows rerun
+- **Status:** confirmed on real Windows Excel COM (2026-08-03/04), including the related matrix-write cast bug found in the same area (`Range.Value2` mis-resolving a bulk 2D array write on this install; fixed by using `Range.Value` instead).
 - **Evidence:** `SNETL - Week 31.xlsx` and `Week 32.xlsx` reached the formatter but failed with `Unable to cast object of type System.Object[] to type System.String`.
 - **Correction:** all SportyNet COM reads now pass through scalar-unwrapping helpers; direct string casts and `Range.Text` reads were removed from the affected path.
 
-## ISS-006 — WEEK 30 internal blank program line
+## RESOLVED-ISS-006 — WEEK 30 internal blank program line
 
-- **Status:** fixed in code in 2.0.4-dev; pending Windows Excel rerun.
-- **Evidence:** `WEEK 30 V2.xlsx`, `Sheet1!D73`, merge `D73:D80` contains `AMISTOSO INTERNACIONAL / 2026 / [blank] / Benfica x Villareal / 17/07 / vt`.
+- **Status:** confirmed on real Windows Excel COM (2026-08-04).
+- **Evidence:** `WEEK 30 V2.xlsx`, source column D (pre-insert), row 73, span 8 -- contains `AMISTOSO INTERNACIONAL / 2026 / [blank] / Benfica x Villareal / 17/07 / vt`.
 - **Previous behavior:** the formatter stopped at the program stage because the earlier plan treated every internal blank physical line as invalid.
 - **Correction:** preserve physical positions while applying the two manual end-based joins; a blank join target consumes the next meaningful fragment without adding a leading separator. Remaining blank placeholders are removed afterward.
-- **Expected output:** `AMISTOSO INTERNACIONAL`, `2026`, `Benfica x Villareal`, `17/07 vt` on four lines.
+- **Confirmed output:** the block lands at post-format cell **E73** (source column D shifts by +1 for the CDMX column insert -- not D73), holding exactly `AMISTOSO INTERNACIONAL` / `2026` / `Benfica x Villareal` / `17/07 vt` on four lines.
+- **Found and fixed in the same pass:** `AI/Tests/Run-Windows-SmokeTests.ps1` checked `Cells.Item(73,4)` (D73) instead of `Cells.Item(73,5)` (E73). D73 is a non-anchor cell of a *different* block (the column-C-sourced block spanning rows 68-75), so it legitimately reads empty regardless of correctness -- that's normal Excel merged-cell behavior, not a formatter bug. This is exactly the "pending Windows rerun" this issue and `OPEN-V2-001` called for; running it for the first time surfaced a real test bug, not a formatter bug. Fixed; full suite now passes 7/7.
 
-## ISS-007 — Settings layout controls were misleading
+## RESOLVED-ISS-007 — Settings layout controls were misleading
 
-- **Status:** resolved in the 2.0.4-dev UI; Windows UI confirmation pending.
+- **Status:** confirmed on real Windows (2026-08-04) via a live screenshot of the redesigned UI.
 - **Evidence:** the Layout tab displayed the same generic values for every grid even though Pasiones/Todo and SportyNet use format-specific overrides.
 - **Correction:** remove the Layout tab from the simplified V1 manager UI. Formatting dimensions remain implementation-owned and fixed per grid type.
 
-## ISS-008 — Settings launcher leaves a PowerShell console visible
+## RESOLVED-ISS-008 — Settings launcher leaves a PowerShell console visible
 
-- **Status:** fixed in code in 2.0.4-dev; Windows confirmation pending.
+- **Status:** confirmed on real Windows (2026-08-04) -- launched via `Open Settings.vbs` and checked running processes; only the Settings window itself has a visible window, no bare console.
 - **Correction:** `Open Settings.bat` delegates to `Open Settings.vbs`, which launches Windows PowerShell with a hidden window. Startup errors are logged and displayed through a message box.
