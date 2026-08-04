@@ -908,6 +908,20 @@ Show-Text "Excel files found ($($files.Count)):" "Archivos de Excel encontrados 
 $files | ForEach-Object { Write-Host "  $($_.Name)" }
 Write-Host ""
 
+# Warn (don't auto-close -- an operator's own unrelated Excel work could be
+# running) if an earlier interrupted run left an orphaned instance behind.
+# The most common cause of a stray blank "BookN" window is a prior run that
+# never reached the cleanup below, e.g. the console was force-closed mid-run;
+# this leaves a hidden Excel.exe process alive, and it can hold one of the
+# grid files open, which is what later shows up as an unexplained Excel window.
+try {
+    $priorExcel = @(Get-Process -Name EXCEL -ErrorAction SilentlyContinue)
+    if ($priorExcel.Count -gt 0) {
+        Show-Text "Warning: $($priorExcel.Count) Excel process(es) already running before this started. If nothing is open on purpose, an earlier run may not have closed cleanly." `
+                  "Advertencia: ya hay $($priorExcel.Count) proceso(s) de Excel en ejecucion antes de iniciar. Si no hay nada abierto a proposito, es posible que una ejecucion anterior no se haya cerrado correctamente." DarkYellow
+    }
+} catch {}
+
 $xl = New-Object -ComObject Excel.Application
 $xl.Visible=$false; $xl.DisplayAlerts=$false; $xl.ScreenUpdating=$false
 # Deliberately do not set Excel.Application.Calculation. Some environments reject
@@ -915,6 +929,14 @@ $xl.Visible=$false; $xl.DisplayAlerts=$false; $xl.ScreenUpdating=$false
 
 $rptUpdated=@(); $rptSkipped=@(); $rptErrors=@(); $rptUnknown=@()
 
+# Everything that touches $xl runs inside try/finally so a genuinely new Excel
+# instance always gets closed and released -- including on an uncaught error
+# or Ctrl+C -- instead of only on the normal, no-error path. Before this fix,
+# any exception escaping the per-file try/catch below (or an interrupted
+# console) skipped cleanup entirely and left Excel.exe running hidden in the
+# background, which is the actual mechanism behind stray "BookN" windows: a
+# leaked instance from an earlier run, still holding a file open.
+try {
 foreach ($f in $files) {
     Show-Text ">> $($f.Name)" ">> $($f.Name)" Yellow
     $wb=$null
@@ -1427,10 +1449,12 @@ foreach ($f in $files) {
     }
     Write-Host ""
 }
-
-try { $xl.Quit() } catch {}
-[System.Runtime.InteropServices.Marshal]::ReleaseComObject($xl) | Out-Null
-[GC]::Collect(); [GC]::WaitForPendingFinalizers()
+} finally {
+    if ($null -ne $wb) { try { $wb.Close($false) } catch {} }
+    try { $xl.Quit() } catch {}
+    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($xl) | Out-Null
+    [GC]::Collect(); [GC]::WaitForPendingFinalizers()
+}
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
