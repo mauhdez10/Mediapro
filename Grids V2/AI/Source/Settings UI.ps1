@@ -3,6 +3,8 @@
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+[System.Windows.Forms.Application]::EnableVisualStyles()
+[System.Windows.Forms.Application]::SetCompatibleTextRenderingDefault($false)
 
 $settingsFolder=$PSScriptRoot
 $root=Split-Path $settingsFolder -Parent
@@ -303,8 +305,12 @@ function Start-SettingsUi {
     $form.Size=New-Object Drawing.Size(880,650); $form.StartPosition='CenterScreen'
     $form.FormBorderStyle='FixedDialog'; $form.MaximizeBox=$false; $form.MinimizeBox=$true
     $form.Font=New-Object Drawing.Font('Segoe UI',9)
+    $form.BackColor=[Drawing.Color]::FromArgb(245,246,248)
+
+    $accent=[Drawing.Color]::FromArgb(0,120,80)
 
     $switch=New-Object Windows.Forms.Button; $switch.Location='735,15'; $switch.Size='105,34'
+    $switch.FlatStyle='Flat'; $switch.FlatAppearance.BorderColor=$accent; $switch.ForeColor=$accent; $switch.BackColor=[Drawing.Color]::White
 
     $general=New-Object Windows.Forms.GroupBox; $general.Location='20,55'; $general.Size='820,145'
     $labelLang=New-Object Windows.Forms.Label; $labelLang.Location='20,33'; $labelLang.Size='210,24'
@@ -325,6 +331,14 @@ function Start-SettingsUi {
     $grid.AllowUserToAddRows=$false; $grid.AllowUserToDeleteRows=$false; $grid.RowHeadersVisible=$false
     $grid.AutoSizeColumnsMode='None'; $grid.SelectionMode='CellSelect'; $grid.MultiSelect=$false
     $grid.RowTemplate.Height=28
+    $grid.BackgroundColor=[Drawing.Color]::White
+    $grid.BorderStyle='None'; $grid.CellBorderStyle='SingleHorizontal'; $grid.ColumnHeadersBorderStyle='None'
+    $grid.ColumnHeadersHeightSizeMode='DisableResizing'; $grid.ColumnHeadersHeight=32
+    $grid.ColumnHeadersDefaultCellStyle.BackColor=[Drawing.Color]::FromArgb(230,232,236)
+    $grid.ColumnHeadersDefaultCellStyle.Font=New-Object Drawing.Font($form.Font,[Drawing.FontStyle]::Bold)
+    $grid.EnableHeadersVisualStyles=$false
+    $grid.DefaultCellStyle.SelectionBackColor=$accent; $grid.DefaultCellStyle.SelectionForeColor=[Drawing.Color]::White
+    $grid.AlternatingRowsDefaultCellStyle.BackColor=[Drawing.Color]::FromArgb(247,247,249)
     $c1=New-Object Windows.Forms.DataGridViewTextBoxColumn; $c1.Name='GridType'; $c1.ReadOnly=$true; $c1.Width=300
     $c2=New-Object Windows.Forms.DataGridViewTextBoxColumn; $c2.Name='Tabs'; $c2.Width=190
     $c3=New-Object Windows.Forms.DataGridViewComboBoxColumn; $c3.Name='Position'; $c3.Width=240
@@ -340,6 +354,8 @@ function Start-SettingsUi {
     $tabsGroup.Controls.Add($info); $tabsGroup.Controls.Add($grid); $tabsGroup.Controls.Add($fixedLayout)
 
     $save=New-Object Windows.Forms.Button; $save.Location='20,545'; $save.Size='185,42'
+    $save.FlatStyle='Flat'; $save.BackColor=$accent; $save.ForeColor=[Drawing.Color]::White
+    $save.Font=New-Object Drawing.Font($form.Font,[Drawing.FontStyle]::Bold)
     $reset=New-Object Windows.Forms.Button; $reset.Location='220,545'; $reset.Size='185,42'
     $restore=New-Object Windows.Forms.Button; $restore.Location='420,545'; $restore.Size='185,42'
     $close=New-Object Windows.Forms.Button; $close.Location='620,545'; $close.Size='220,42'
